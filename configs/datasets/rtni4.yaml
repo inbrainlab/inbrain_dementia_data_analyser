@@ -1,0 +1,19 @@
+# 4RTNI - dataset configuration. See docs/configuration.md.
+name: 4RTNI
+label: 4-Repeat Tauopathy Neuroimaging Initiative
+portal: LONI IDA - https://ida.loni.usc.edu
+folder: Tables_4TRNI
+output_folder: Integrated_4RTNI
+output_file: 4RTNI_longitudinal.csv
+subject_id: SUBID
+time_axis: date
+module: rtni4
+default_table: data
+ida:
+  enabled: true
+  required: false
+tables:
+  data:
+    pattern: 4RTNI_DATA_{date}.csv
+    id_columns: [SUBID]
+    description: One wide file, one row per subject; timepoints as column suffixes _0, _6MO, _12MO

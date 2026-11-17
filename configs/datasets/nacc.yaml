@@ -1,0 +1,44 @@
+# NACC - dataset configuration. See docs/configuration.md.
+name: NACC
+label: National Alzheimer's Coordinating Center Uniform Data Set
+portal: https://naccdata.org (investigator data request)
+folder: Tables_NACC
+output_folder: Integrated_NACC
+output_file: NACC_longitudinal.csv
+subject_id: NACCID
+time_axis: date
+module: nacc
+default_table: main
+tables:
+  main:
+    pattern: investigator_ftldlbd_nacc*.csv
+    id_columns: [NACCID]
+    date_columns: [VISITYR]
+    description: UDS visits (large; read in chunks)
+  csf:
+    pattern: investigator_fcsf_nacc*.csv
+    id_columns: [NACCID]
+  mri:
+    pattern: investigator_scan_mriqc_nacc*.csv
+    id_columns: [NACCID]
+  pet_gaain:
+    pattern: investigator_scan_amyloidpetgaain_nacc*.csv
+    id_columns: [NACCID]
+    date_columns: [SCANDATE]
+  pet_npdka:
+    pattern: investigator_scan_amyloidpetnpdka_nacc*.csv
+    id_columns: [NACCID]
+    date_columns: [SCANDATE]
+  pet_fdg:
+    pattern: investigator_scan_fdgpetnpdka_nacc*.csv
+    id_columns: [NACCID]
+    date_columns: [SCANDATE]
+  pet_qc:
+    pattern: investigator_scan_petqc_nacc*.csv
+    id_columns: [NACCID]
+  pet_tau:
+    pattern: investigator_scan_taupetnpdka_nacc*.csv
+    id_columns: [NACCID]
+    date_columns: [SCANDATE]
+settings:
+  chunk_size: 10000

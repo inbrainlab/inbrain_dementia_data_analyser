@@ -1,0 +1,95 @@
+# PREVENTAD - dataset configuration. See docs/configuration.md.
+name: PREVENTAD
+label: PRe-symptomatic EValuation of Experimental or Novel Treatments for AD (PREVENT-AD)
+portal: https://registeredpreventad.loris.ca (registered data release)
+folder: Tables_PREVENT-AD
+output_folder: Integrated_PREVENTAD
+output_file: PREVENTAD_longitudinal.csv
+subject_id: CONP_CandID
+time_axis: date
+module: preventad
+tables:
+  mci:
+    pattern: MCI_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date]
+  clinical_dx:
+    pattern: Clinical_diagnosis_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date]
+  demographics:
+    pattern: Demographics_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+  genetics:
+    pattern: Genetics_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+  el_cdr_moca:
+    pattern: EL_CDR_MoCA_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  cdr_fu:
+    pattern: CDR_FU_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  ravlt:
+    pattern: RAVLT_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  rbans:
+    pattern: RBANS_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  tmt:
+    pattern: TMT_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  dkefs:
+    pattern: DKEFS-CWIT_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  ad8:
+    pattern: AD8_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  aps:
+    pattern: APS_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+  smell:
+    pattern: Smell_identification_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  bp_weight:
+    pattern: BP_Pulse_Weight_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  el_medical:
+    pattern: EL_Medical_history_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  el_caide:
+    pattern: EL_CAIDE_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  med_use:
+    pattern: Med_use_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  lab:
+    pattern: Lab_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  pet_info:
+    pattern: PET_info_participants_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+  csf:
+    pattern: CSF_proteins_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  plasma_4plex:
+    pattern: Plasma_4plex_IPMS_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]
+  plasma_ptau217:
+    pattern: Plasma_p-tau217_Registered_PREVENTAD_{date}.csv
+    id_columns: [CONP_CandID]
+    date_columns: [Date_taken]

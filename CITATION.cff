@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below (and the datasets you used, following their data use agreements)."
+title: "inbrain_dementia_data_analyser: harmonisation of ten public dementia and ageing cohorts and creation of multimodal study cohorts"
+type: software
+version: 0.1.0
+date-released: 2026-11-16
+authors:
+  - name: "InBrain lab, University of Sao Paulo"
+# TODO: add the individual authors (family-names / given-names / orcid) and,
+# once published, a 'preferred-citation' block pointing to the paper.
+keywords:
+  - dementia
+  - Alzheimer's disease
+  - data harmonisation
+  - neuroimaging
+  - cohort selection

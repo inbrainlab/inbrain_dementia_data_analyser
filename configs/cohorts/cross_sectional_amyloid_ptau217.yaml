@@ -1,0 +1,10 @@
+# Cross-sectional: one amyloid PET per subject with a plasma p-tau217 within
+# 6 months (any platform) and the CDR of the visit.
+tool: cross_sectional
+method: anchor
+output_prefix: amyloid_ptau217
+anchor: PET_ABETA                 # any amyloid tracer (imaging.yaml measure_groups)
+required: [PLASMA_PTAU217, CDR]   # fluid group (imaging.yaml fluid_group_patterns)
+optional: [MRI_T1w]
+margin_months: 6
+anchor_events: first

@@ -1,0 +1,12 @@
+# Anchor pairing (the notebook's "cohort creator" default run).
+# Every T1w MRI with CDR, CDR-SB and BMI within the margin; T2w if present.
+# Run:  inbrain-dementia cohort configs/cohorts/t1w_cdr_bmi_anchor.yaml <root>
+tool: anchor
+output_prefix: T1w_CDR_BMI
+anchor: MRI_T1w
+required: [CDR, CDR_SB, BMI]
+optional: [MRI_T2w]
+margin_months: 6
+margin_months_by_feature: {BMI: 12}
+anchor_events: most_optional      # all | first | last | most_optional
+select_databanks: ALL

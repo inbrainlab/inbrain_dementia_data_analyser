@@ -1,0 +1,20 @@
+# NIFD - dataset configuration. See docs/configuration.md.
+name: NIFD
+label: Frontotemporal Lobar Degeneration Neuroimaging Initiative (NIFD/FTLDNI)
+portal: LONI IDA - https://ida.loni.usc.edu
+folder: Tables_NIFD
+output_folder: Integrated_NIFD
+output_file: NIFD_longitudinal.csv
+subject_id: LONI_ID
+time_axis: date
+module: nifd
+default_table: clinical
+ida:
+  enabled: true
+  required: true
+tables:
+  clinical:
+    pattern: NIFD_Clinical_Data_{date}*.xlsx
+    id_columns: [LONI_ID]
+    date_columns: [CLINICAL_LINKDATE]
+    description: Clinical spreadsheet, one row per visit

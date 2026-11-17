@@ -1,0 +1,90 @@
+# =============================================================================
+# INTEGRATION SETTINGS (merge -> expanded master -> cohort tools)
+# =============================================================================
+# merge_order    order in which the per-dataset tables are stacked
+# output_folder  folder under the root path that receives the merged outputs
+# expand.window_step_months / window_max_months
+#     width of the time windows around the first-diagnosis date and the last
+#     explicit window (beyond it: gt<max> / pregt<max>)
+# expand.auto_feature_prefixes
+#     every family with these prefixes is expanded in addition to the
+#     variables flagged expand: true and the imaging types
+# expand.carry_columns
+#     subject-level columns copied unchanged into the expanded master
+# expand.day_offset_banks / visit_number_banks / age_month_banks
+#     datasets whose acquisition times are numbers (days, visit numbers, age
+#     in months) instead of calendar dates
+# time_axis.numeric_acquisition_unit
+#     unit of numeric acquisition times per dataset for the cohort tools
+#     (null = visit index, compared only with other visits)
+# time_axis.id_daycode_banks
+#     datasets whose image IDs carry the day offset (OAS30001_MR_d0045)
+# =============================================================================
+merge_order: [ADNI, A4, NACC, ABVIB, AIBL, PREVENTAD, MCSA, 4RTNI, NIFD, OASIS]
+output_folder: Integrated_ALL
+expand:
+  window_step_months: 6
+  window_max_months: 240
+  imaging_value_channels: [suvr, centiloid, manufacturer, model, image_ids]
+  auto_feature_prefixes: [Plasma_, CSF_, Lab_]
+  fluid_meta_channels: [method, batch, rundate]
+  feature_meta_suffixes: [lab, kit]
+  date_alias: {}
+  shared_date_fallback_column: all_pct_date_collection
+  shared_date_fallback_features: [ABETA40, ABETA42, PTAU, TAU]
+  empty_tokens: ['', 'nan', 'NaN', 'None', 'NaT', 'NA']
+  anchor_fallback_to_first_acquisition: true
+  carry_columns:
+  - uid
+  - Databank
+  - dataset
+  - ID
+  - 1st_diag
+  - Lst_diag
+  - 1st_diag_date
+  - Lst_diag_date
+  - all_diag
+  - age_at_1st_diag
+  - all_diag_date
+  - nb_of_visits
+  - nb_of_change
+  - gender
+  - education
+  - education_level
+  - race
+  - hispanic
+  - age_at_baseline
+  - APOE_genotype
+  - APOE_e4_count
+  - APOE_e4_any
+  - marital_status
+  - handedness
+  - living_situation
+  - SEIZURE_text_flag
+  - SEIZURE_text_n
+  - SEIZURE_text_1st_date
+  - SEIZURE_text_evidence
+  - AED_text_flag
+  - AED_text_n
+  - AED_text_1st_date
+  - AED_text_evidence
+  - Neuro_history_ever
+  - Neuro_history_n
+  - Neuro_history_current
+  - Endo_history_ever
+  - Endo_history_n
+  - Endo_history_current
+  day_offset_banks: [A4, OASIS]
+  age_month_banks: [PREVENTAD]
+  visit_number_banks: [4RTNI, MCSA]
+  days_per_month: 30.4375
+time_axis:
+  numeric_acquisition_unit:
+    OASIS: days
+    A4: days
+    NIFD: months
+    4RTNI: months
+    MCSA: null
+    ABVIB: null
+  days_per_month: 30.4375
+  id_daycode_banks: [OASIS]

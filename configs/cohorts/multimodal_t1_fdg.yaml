@@ -1,0 +1,11 @@
+# Multimodal set: T1w + FDG within 12 months (fMRI, amyloid and tau PET optional).
+tool: multimodal
+output_prefix: multimodal_T1_FDG
+window_months: 12
+prefer: most_modalities           # most_modalities | tightest
+modalities:
+  - {label: MRI_T1w,  prefixes: [MRI_T1w],  required: true}
+  - {label: MRI_fMRI, prefixes: [MRI_fMRI], required: false}
+  - {label: PET_FDG,  prefixes: [PET_FDG],  required: true}
+  - {label: PET_ABETA, prefixes: [PET_ABETA], required: false}
+  - {label: PET_TAU,  prefixes: [PET_TAU],  required: false}

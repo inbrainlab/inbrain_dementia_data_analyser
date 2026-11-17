@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# Subject-level data must never be committed. All ten source datasets are
+# distributed under data use agreements.
+# ---------------------------------------------------------------------------
+data/
+Tables_*/
+Integrated_*/
+**/Integrated_*/
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+*.pkl
+!tests/fixtures/**/*.csv
+outputs/
+runs/
+*.provenance.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+.env

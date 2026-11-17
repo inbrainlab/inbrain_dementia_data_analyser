@@ -1,0 +1,57 @@
+# OASIS - dataset configuration. See docs/configuration.md.
+name: OASIS
+label: Open Access Series of Imaging Studies (OASIS-3)
+portal: https://sites.wustl.edu/oasisbrains (NITRC-IR / XNAT Central)
+folder: Tables_OASIS
+output_folder: Integrated_OASIS
+output_file: OASIS_longitudinal.csv
+subject_id: OASISID
+time_axis: days
+module: oasis
+tables:
+  dx:
+    pattern: OASIS3_UDSd1_diagnoses.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  cdr:
+    pattern: OASIS3_UDSb4_cdr.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  gds:
+    pattern: OASIS3_UDSb6_gds.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  neuro:
+    pattern: OASIS3_UDSc1_cognitive_assessments.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  demo_a1:
+    pattern: OASIS3_UDSa1_participant_demo.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  vitals:
+    pattern: OASIS3_UDSb1_physical_eval.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  health:
+    pattern: OASIS3_UDSa5*.csv
+    required: false
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+    description: UDS A5 health history (seizures, diabetes)
+  motor:
+    pattern: OASIS3_UDSb3.csv
+    id_columns: [OASISID]
+    date_columns: [days_to_visit]
+  demog:
+    pattern: OASIS3_demographics.csv
+    id_columns: [OASISID]
+  mri:
+    pattern: OASIS3_MR_json.csv
+    id_columns: [subject_id]
+  pet:
+    pattern: OASIS3_PET_json.csv
+    id_columns: [subject_id]
+  centiloid:
+    pattern: OASIS3_amyloid_centiloid.csv
+    id_columns: [subject_id]

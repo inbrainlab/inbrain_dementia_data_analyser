@@ -1,0 +1,61 @@
+# ABVIB - dataset configuration. See docs/configuration.md.
+name: ABVIB
+label: 'Aging Brain: Vasculature, Ischemia, and Behavior'
+portal: LONI IDA - https://ida.loni.usc.edu
+folder: Tables_ABVIB
+output_folder: Integrated_ABVIB
+output_file: ABVIB_longitudinal.csv
+subject_id: PTID
+time_axis: date
+module: abvib
+ida:
+  enabled: true
+  required: false
+tables:
+  dx:
+    pattern: UDS_D1_CLINICIAN_DIAGNOSIS_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [VISITYR]
+  cdr:
+    pattern: UDS_B4_CDR_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [VISITYR]
+  gds:
+    pattern: UDS_B6_GDS_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [VISITYR]
+  npsych:
+    pattern: UDS_C1_MMSE_NPSYCH_BATTERY_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [VISITYR]
+  cogscor:
+    pattern: COGSCOR_{date}*.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [TestDate]
+  demog:
+    pattern: UDS_A1_SUBJECT_DEMOGRAPHICS_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+  subcat:
+    pattern: SUBCAT_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [DATE]
+  apoe:
+    pattern: IVD_APOE_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+  lab:
+    pattern: LABORATORY_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [CDATE]
+  imaging:
+    pattern: UDS_E1_IMAGING_LABS_{date}.csv
+    required: false
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [VISITYR]
+    description: UDS E1 imaging flags (fallback to IDA)
+  meds:
+    pattern: UDS_A4_SUBJECT_MEDICINE_{date}.csv
+    id_columns: [PTID, SUBJECT_ID]
+    date_columns: [VISITYR]
+settings:
+  # tables with their own date column (UDS forms use VISITYR / VISITMO / VISITDAY)
+  table_date_columns: {cogscor: TestDate, lab: CDATE, subcat: DATE}

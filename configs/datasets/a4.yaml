@@ -1,0 +1,115 @@
+# A4 - dataset configuration. See docs/configuration.md.
+name: A4
+label: Anti-Amyloid Treatment in Asymptomatic Alzheimer's (A4) / LEARN
+portal: https://www.a4studydata.org (and LONI IDA image search)
+folder: Tables_A4
+output_folder: Integrated_A4
+output_file: A4_longitudinal.csv
+subject_id: BID
+time_axis: days
+module: a4
+ida:
+  enabled: true
+  required: false
+tables:
+  registry:
+    pattern: A4_REGISTRY_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [EXAMDAY]
+    description: Visit registry (EXAMDAY = days since consent)
+  ptdemog:
+    pattern: A4_PTDEMOG_PRV2_{date}.csv
+    id_columns: [BID]
+  subjinfo:
+    pattern: A4_SUBJINFO_PRV2_{date}.csv
+    id_columns: [BID]
+  cdr:
+    pattern: A4_CDR_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  mmse:
+    pattern: A4_MMSE_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  cogdigit:
+    pattern: A4_COGDIGIT_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  coglogic:
+    pattern: A4_COGLOGIC_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  cogfcsr16:
+    pattern: A4_COGFCSR16_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  psychwell:
+    pattern: A4_PSYCHWELL_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  cfi:
+    pattern: A4_CFI_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  cfisp:
+    pattern: A4_CFISP_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  adlpq:
+    pattern: A4_ADLPQ_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  vitals:
+    pattern: A4_VITALS_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  habits:
+    pattern: A4_HABITS_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  ies:
+    pattern: A4_IES_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  ftpscale:
+    pattern: A4_FTPSCALE_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  concerns:
+    pattern: A4_CONCERNS_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  sppacc:
+    pattern: A4_SPPACC_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  inithealth:
+    pattern: A4_INITHEALTH_PRV2_{date}.csv
+    id_columns: [BID]
+  petsuvr:
+    pattern: A4_PETSUVR_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  vmri:
+    pattern: A4_VMRI_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+    recursive: true
+  tausuvr:
+    pattern: TAUSUVR_{date}.csv
+    id_columns: [ID, BID]
+    recursive: true
+  tausuvr_ps:
+    pattern: TAUSUVR_PETSURFER_{date}.csv
+    id_columns: [ID, BID]
+    recursive: true
+  dwi_params:
+    pattern: A4_DWI_PARAMS_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+  fmri_params:
+    pattern: A4_FMRI_PARAMS_PRV2_{date}.csv
+    id_columns: [BID]
+    date_columns: [VISCODE]
+settings:
+  plasma_file_regex: plasma|ptau|p-tau|pt217|biomarker|roche|c2n|nfl|gfap

@@ -1,0 +1,1257 @@
+# =============================================================================
+# VARIABLE MAPPING
+# =============================================================================
+# One entry per output measure. The entry name is the column stem written by
+# the pre-processing step:
+#     all_<name>_date, all_<name>_score, 1st_<name>_score, 1st_<name>_date,
+#     Lst_<name>_score, Lst_<name>_date, nb_of_<name>_visits
+# so two datasets that list the same name end up in the same columns after the
+# merge.
+#
+# Entry keys
+#   label, domain, unit, description   documentation (shown in docs/variables.md)
+#   kind      score (default) | categorical | flag
+#   expand    true -> placed into 6-month windows in MASTER_expanded_240m.csv
+#   builtin   true -> produced by dataset code; sources are not read from here
+#   sources   one block per dataset (or a list of blocks)
+#
+# Source keys (per dataset)
+#   table          table key from configs/datasets/<dataset>.yaml
+#                  (may be omitted for datasets with a default_table)
+#   column         raw column, or a list of candidates (first one present wins)
+#   date_column    date column, when it is not the table's usual visit date
+#   transform      named transform: sum, mean, max, coalesce, difference,
+#                  ratio, bmi, bmi_reported_or_computed (4RTNI also:
+#                  sum_timepoint_items); see transforms.py to add your own
+#   items          input columns of the transform
+#   params         extra transform parameters (sum / mean / max:
+#                  item_missing_values: [9] drops item codes before combining)
+#   missing_values codes that mean "missing" (e.g. [-4, 88, 99])
+#   valid_range    [min, max] (null = open end); values outside -> missing
+#   range_inclusive  false -> the bounds themselves are excluded
+#   valid_codes    keep only these codes (everything else -> missing)
+#   row_filter     {column: ..., pattern: <regex>} keep only matching rows
+#   case_insensitive  match column names regardless of case
+#   instrument, suffix, date_suffix   4RTNI wide columns
+#                  <instrument>_<timepoint>_<suffix> (empty suffix allowed)
+#
+# Example - a new variable present under different names in two datasets:
+#
+#   RAVLT_forgetting:
+#     label: RAVLT forgetting (trial 5 minus delayed recall)
+#     domain: memory
+#     expand: true
+#     sources:
+#       ADNI: {table: neurobat, column: AVDEL30MIN}      # hypothetical name
+#       PREVENTAD: {table: ravlt, transform: difference,
+#                   items: [List_A_Trial_5, ListA_Delayed_Recall_Correct_Answer]}
+#
+# Run `inbrain-dementia check-config` after editing this file.
+# =============================================================================
+variables:
+  TMT_A:
+    label: Trail Making Test part A, time (s)
+    domain: executive_attention
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: TRAASCOR}
+      ABVIB: {table: npsych, column: TRAILA}
+      4RTNI: {instrument: UDSTRAILS, suffix: TRAILA, date_suffix: DATE}
+      PREVENTAD: {table: tmt, column: TMT_A_time}
+      OASIS: {table: neuro, column: tma}
+      NACC:
+        transform: coalesce
+        items: [TRAILA, OTRAILA]
+        note: UDS v3 TRAILA, else v2 OTRAILA
+  TMT_B:
+    label: Trail Making Test part B, time (s)
+    domain: executive_attention
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: TRABSCOR}
+      ABVIB: {table: npsych, column: TRAILB}
+      4RTNI: {instrument: UDSTRAILS, suffix: TRAILB, date_suffix: DATE}
+      PREVENTAD: {table: tmt, column: TMT_B_time}
+      OASIS: {table: neuro, column: tmb}
+      NACC:
+        transform: coalesce
+        items: [TRAILB, OTRAILB]
+        note: UDS v3 TRAILB, else v2 OTRAILB
+  BNT:
+    label: Boston Naming Test, total correct
+    domain: language
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: BNTTOTAL}
+      NIFD: {column: BNTCORR, date_column: CLINICAL_LINKDATE}
+      ABVIB: {table: npsych, column: BOSTON}
+      OASIS: {table: neuro, column: bnt}
+      NACC: {column: BOSTON}
+  MINT:
+    label: Multilingual Naming Test, total
+    domain: language
+    sources:
+      ADNI: {table: neurobat, column: MINTTOTAL}
+      OASIS: {table: neuro, column: mintscnc}
+      NACC: {column: MINTTOTS}
+  RAVLT_I:
+    label: 'RAVLT immediate recall (ADNI AVTOT1 and NACC REY1REC: trial 1; PREVENT-AD: sum of trials 1-5)'
+    domain: memory
+    sources:
+      ADNI: {table: neurobat, column: AVTOT1}
+      PREVENTAD: {table: ravlt, column: List_A_Sum_Trials_1_5}
+      NACC: {column: REY1REC}
+  RAVLT_D:
+    label: Rey Auditory Verbal Learning Test, delayed recall
+    domain: memory
+    sources:
+      ADNI: {table: neurobat, column: AVDELTOT}
+      PREVENTAD: {table: ravlt, column: ListA_Delayed_Recall_Correct_Answer}
+      NACC: {column: REYTCOR}
+  LM_I:
+    label: Logical Memory, immediate recall
+    domain: memory
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: LIMMTOTAL}
+      AIBL: {table: neurobat, column: LIMMTOTAL}
+      ABVIB: {table: npsych, column: LOGIMEM}
+      A4: {table: coglogic, column: LIMMTOTAL}
+      OASIS: {table: neuro, column: LOGIMEM}
+      NACC: {column: LOGIMEM}
+  LM_II:
+    label: Logical Memory, delayed recall
+    domain: memory
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: LDELTOTAL}
+      AIBL: {table: neurobat, column: LDELTOTAL}
+      ABVIB: {table: npsych, column: MEMUNITS}
+      A4: {table: coglogic, column: LDELTOTAL}
+      OASIS: {table: neuro, column: MEMUNITS}
+      NACC: {column: MEMUNITS}
+  Clock_Command:
+    label: Clock drawing to command
+    domain: visuospatial
+    sources:
+      ADNI: {table: neurobat, column: CLOCKSCOR}
+  Clock_Copy:
+    label: Clock copy
+    domain: visuospatial
+    sources:
+      ADNI: {table: neurobat, column: COPYSCOR}
+  DS_Fwd:
+    label: Digit span forward
+    domain: attention
+    sources:
+      ADNI: {table: neurobat, column: DSPANFOR}
+      NIFD: {column: DIGITFW, date_column: CLINICAL_LINKDATE}
+      ABVIB: {table: npsych, column: DIGIF}
+      4RTNI: {instrument: DSPAN, suffix: DIGITFW, date_suffix: DATE}
+      OASIS: {table: neuro, column: DIGIF}
+      NACC: {column: DIGIF}
+  DS_Back:
+    label: Digit span backward
+    domain: attention
+    sources:
+      ADNI: {table: neurobat, column: DSPANBAC}
+      NIFD: {column: DIGITBW, date_column: CLINICAL_LINKDATE}
+      ABVIB: {table: npsych, column: DIGIB}
+      4RTNI: {instrument: DSPAN, suffix: DIGITBW, date_suffix: DATE}
+      OASIS: {table: neuro, column: DIGIB}
+      NACC: {column: DIGIB}
+  DigSym:
+    label: Digit Symbol Substitution / WAIS coding
+    domain: processing_speed
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: DIGITSCOR}
+      ABVIB: {table: npsych, column: WAIS}
+      4RTNI: {instrument: DSYM, suffix: '', date_suffix: DATE}
+      A4: {table: cogdigit, column: DIGITTOTAL}
+      OASIS: {table: neuro, column: digsym}
+      NACC: {column: WAIS}
+  VF_anim:
+    label: Category fluency, animals
+    domain: language
+    expand: true
+    sources:
+      ADNI: {table: neurobat, column: CATANIMSC}
+      NIFD: {column: ANCORR, date_column: CLINICAL_LINKDATE}
+      ABVIB: {table: npsych, column: ANIMALS}
+      4RTNI: {instrument: VERBFLU_AN, suffix: ANCORR, date_suffix: DATE}
+      OASIS: {table: neuro, column: ANIMALS}
+      NACC: {column: ANIMALS}
+  VF_veg:
+    label: Category fluency, vegetables
+    domain: language
+    sources:
+      ADNI: {table: neurobat, column: CATVEGESC}
+      ABVIB: {table: npsych, column: VEG}
+      OASIS: {table: neuro, column: VEG}
+  MMSE:
+    label: Mini-Mental State Examination, total
+    domain: global_cognition
+    expand: true
+    sources:
+      ADNI: {table: mmse, column: MMSCORE}
+      AIBL: {table: mmse, column: MMSCORE}
+      NIFD: {column: MMSE_TOT, date_column: MMSE_DCDATE}
+      ABVIB: {table: npsych, column: MMSE}
+      MCSA: {column: MMSEcalc}
+      4RTNI: {instrument: MMSE, suffix: MMSETOT, date_suffix: DATE}
+      A4: {table: mmse, column: MMSCORE}
+      OASIS: {table: cdr, column: MMSE}
+      NACC: {column: NACCMMSE}
+  MoCA:
+    label: Montreal Cognitive Assessment, total
+    domain: global_cognition
+    expand: true
+    sources:
+      ADNI: {table: moca, column: MOCA}
+      NIFD:
+        column: MODREY
+        date_column: MOCA_DCDate
+        note: 'CHECK: MODREY is the modified Rey figure copy in the NIFD dictionary, not MoCA (kept as in the notebook)'
+      4RTNI: {instrument: MOCA, suffix: MOCATOTWITHEDUC, date_suffix: DATE}
+      PREVENTAD: {table: el_cdr_moca, column: MOCA_total_score}
+      OASIS: {table: neuro, column: mocatots}
+      NACC: {column: NACCMOCA}
+  DS_Fwd_MoCA:
+    domain: attention
+    sources:
+      ADNI: {table: moca, column: DIGFOR}
+  DS_Back_MoCA:
+    domain: attention
+    sources:
+      ADNI: {table: moca, column: DIGBACK}
+  CDR:
+    label: Clinical Dementia Rating, global
+    domain: global_staging
+    expand: true
+    sources:
+      ADNI: {table: cdr, column: CDGLOBAL}
+      AIBL: {table: cdr, column: CDGLOBAL}
+      NIFD: {column: CDR_TOT, date_column: CDR_DCDATE}
+      ABVIB: {table: cdr, column: CDRGLOB}
+      MCSA: {column: CDRGLOB}
+      4RTNI: {instrument: CDR, suffix: CDRTOT, date_suffix: DATE}
+      A4: {table: cdr, column: CDGLOBAL}
+      PREVENTAD: {table: el_cdr_moca, column: CDR_total_score}
+      OASIS: {table: cdr, column: CDRTOT}
+      NACC: {column: CDRGLOB}
+  CDR_SB:
+    label: Clinical Dementia Rating, sum of boxes
+    domain: global_staging
+    expand: true
+    sources:
+      ADNI: {table: cdr, column: CDRSB}
+      NIFD: {column: CDR_BOX_SCORE, date_column: CDR_DCDATE}
+      ABVIB: {table: cdr, column: CDRSUM}
+      MCSA: {column: CDRSUM}
+      4RTNI: {instrument: CDR, suffix: BOXSCORE, date_suffix: DATE}
+      A4: {table: cdr, column: CDSOB}
+      OASIS: {table: cdr, column: CDRSUM}
+      NACC: {column: CDRSUM}
+  GDS:
+    label: Geriatric Depression Scale
+    domain: mood
+    expand: true
+    sources:
+      ADNI: {table: gds, column: GDTOTAL}
+      ABVIB: {table: gds, column: GDS}
+      A4: {table: psychwell, column: GDTOTAL}
+      OASIS: {table: gds, column: GDS}
+      NACC: {column: NACCGDS}
+  FAQ:
+    label: Functional Activities Questionnaire, total
+    domain: function
+    expand: true
+    sources:
+      ADNI: {table: faq, column: FAQTOTAL}
+      NIFD: {column: FAQ_TOTAL, date_column: FAQ_DCDATE}
+      MCSA: {column: faq_total}
+      4RTNI: {instrument: FAQ, suffix: FAQTOT, date_suffix: DATE}
+  NPI:
+    label: Neuropsychiatric Inventory (Questionnaire), total
+    domain: behaviour
+    expand: true
+    sources:
+      ADNI: {table: npiq, column: NPISCORE}
+      NIFD:
+        transform: sum
+        items: [NPI_DELSEV, NPI_HALLSEV, NPI_AGITSEV, NPI_DEPDSEV, NPI_ANXSEV, NPI_ELATSEV, NPI_APASEV, NPI_DISNSEV, NPI_IRRSEV,
+          NPI_MOTSEV, NPI_NITESEV, NPI_APPSEV]
+        date_column: NPI_DCDATE
+      4RTNI:
+        instrument: NPIQ
+        transform: sum_timepoint_items
+        items: [DELSEV, HALSEV, AGSEV, DEPSEV, ANXSEV, EUPSEV, APTHSEV, DISSEV, IRRSEV, MOTSEV, SLESEV, EATSEV]
+        date_suffix: DATE
+        note: sum of the 12 NPI-Q severity items per timepoint
+  STAI:
+    label: State-Trait Anxiety Inventory (ADNI 6-item sum)
+    domain: mood
+    sources:
+      ADNI:
+        table: stai
+        transform: sum
+        items: [STAIAD1, STAIAD2, STAIAD3, STAIAD4, STAIAD5, STAIAD6]
+      A4: {table: psychwell, column: STAITOTAL}
+  ECOG_PT:
+    label: Everyday Cognition 12-item, participant (sum of answered items; 9 = don't know excluded)
+    domain: function
+    sources:
+      ADNI:
+        table: ecog_pt
+        transform: sum
+        items: [ECOGPT1, ECOGPT2, ECOGPT3, ECOGPT4, ECOGPT5, ECOGPT6, ECOGPT7, ECOGPT8, ECOGPT9, ECOGPT10, ECOGPT11, ECOGPT12]
+        date_column: COLDATE
+        params: {item_missing_values: [9]}
+  ECOG_SP:
+    label: Everyday Cognition 12-item, study partner (sum of answered items; 9 = don't know excluded)
+    domain: function
+    sources:
+      ADNI:
+        table: ecog_sp
+        transform: sum
+        items: [ECOGSP1, ECOGSP2, ECOGSP3, ECOGSP4, ECOGSP5, ECOGSP6, ECOGSP7, ECOGSP8, ECOGSP9, ECOGSP10, ECOGSP11, ECOGSP12]
+        date_column: COLDATE
+        params: {item_missing_values: [9]}
+  Height:
+    label: Height (units of the source)
+    domain: vitals
+    expand: true
+    sources:
+      ADNI: {table: vitals, column: VSHEIGHT}
+      MCSA: {column: HT}
+      A4: {table: vitals, column: VSHEIGHT}
+      OASIS: {table: vitals, column: HEIGHT}
+      NACC:
+        column: HEIGHT
+        missing_values: [888, 888.8, 999, 999.9, 8888, 9999, 88.8, 99.9]
+        valid_range: [0, null]
+        range_inclusive: false
+  Weight:
+    label: Weight (units of the source)
+    domain: vitals
+    expand: true
+    sources:
+      ADNI: {table: vitals, column: VSWEIGHT}
+      MCSA: {column: WT}
+      A4: {table: vitals, column: VSWEIGHT}
+      PREVENTAD: {table: bp_weight, column: Weight}
+      OASIS: {table: vitals, column: WEIGHT}
+      NACC:
+        column: WEIGHT
+        missing_values: [888, 888.8, 999, 999.9, 8888, 9999, 88.8, 99.9]
+        valid_range: [0, null]
+        range_inclusive: false
+  BP_Sys:
+    label: Systolic blood pressure (mmHg)
+    domain: vitals
+    sources:
+      ADNI: {table: vitals, column: VSBPSYS}
+      MCSA: {column: SysBPAvg}
+      A4: {table: vitals, column: VSBPSYS}
+      PREVENTAD: {table: bp_weight, column: Systolic_blood_pressure}
+      OASIS: {table: vitals, column: BPSYS}
+      NACC: {column: BPSYS}
+  BP_Dias:
+    label: Diastolic blood pressure (mmHg)
+    domain: vitals
+    sources:
+      ADNI:
+        table: vitals
+        column: [VSBPDIA, VSBPDIAS]
+        note: column name varies across ADNI phases
+      MCSA: {column: DiaBPAvg}
+      A4: {table: vitals, column: VSBPDIA}
+      PREVENTAD: {table: bp_weight, column: Diastolic_blood_pressure}
+      OASIS: {table: vitals, column: BPDIAS}
+      NACC: {column: BPDIAS}
+  BMI:
+    label: Body-mass index (kg/m2)
+    domain: vitals
+    expand: true
+    description: PREVENT-AD BMI is computed in code from visit weight and the eligibility height.
+    sources:
+      ADNI:
+        table: vitals
+        transform: bmi
+        params:
+          weight: VSWEIGHT
+          height: VSHEIGHT
+          weight_unit_column: VSWTUNIT
+          height_unit_column: VSHTUNIT
+      MCSA: {column: BMI}
+      A4:
+        table: vitals
+        transform: bmi
+        params:
+          weight: VSWEIGHT
+          height: VSHEIGHT
+          weight_unit_column: VSWTUNIT
+          height_unit_column: VSHTUNIT
+      OASIS:
+        table: vitals
+        transform: bmi
+        case_insensitive: true
+        params: {weight: WEIGHT, height: HEIGHT, weight_unit: lb, height_unit: in}
+      NACC:
+        transform: bmi_reported_or_computed
+        params:
+          bmi_column: NACCBMI
+          weight: WEIGHT
+          height: HEIGHT
+          weight_unit: lb
+          height_unit: in
+        note: NACCBMI when 10-80, else computed from lb / in
+  VF_D:
+    domain: language
+    sources:
+      NIFD: {column: DCORR, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: VERBFLU_DWORDS, suffix: DCORR, date_suffix: DATE}
+  CVLT_total:
+    domain: memory
+    sources:
+      NIFD: {column: TRCOTOT, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: CVLT, suffix: TRCOTOT, date_suffix: DATE}
+  CVLT_30s:
+    domain: memory
+    sources:
+      NIFD: {column: CORR30, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: CVLT, suffix: CORR30, date_suffix: DATE}
+  CVLT_10m:
+    domain: memory
+    sources:
+      NIFD: {column: CORR10, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: CVLT, suffix: CORR10, date_suffix: DATE}
+  CVLT_recog:
+    domain: memory
+    sources:
+      NIFD: {column: RECOG, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: CVLT, suffix: RECOG, date_suffix: DATE}
+  ModTrails_T:
+    domain: executive_attention
+    sources:
+      NIFD: {column: MTTTIME, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: MTRAILS, suffix: MTTIME, date_suffix: DATE}
+  ModTrails_C:
+    domain: executive_attention
+    sources:
+      NIFD: {column: MTCORR, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: MTRAILS, suffix: MTCORR, date_suffix: DATE}
+  GDS_30:
+    domain: mood
+    sources:
+      NIFD: {column: GDSTOT, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: GDS, suffix: GDSTOT, date_suffix: DATE}
+  GDS_15:
+    domain: mood
+    sources:
+      NIFD: {column: GDS15TO, date_column: CLINICAL_LINKDATE}
+      4RTNI: {instrument: GDS, suffix: GDS15TO, date_suffix: DATE}
+  SEADL:
+    domain: function
+    sources:
+      NIFD: {column: SEADL, date_column: SEADL_DCDATE}
+      4RTNI: {instrument: SEADL, suffix: '', date_suffix: DATE}
+  CGI_sev:
+    domain: global_cognition
+    sources:
+      NIFD: {column: CGI_SEVERITY, date_column: CGI_DCDATE}
+      4RTNI: {instrument: CGI_S, suffix: '', date_suffix: DATE}
+  CGI_chg:
+    domain: global_cognition
+    sources:
+      NIFD: {column: CGI_CHANGE, date_column: CGI_DCDATE}
+      4RTNI: {instrument: CGI_C, suffix: '', date_suffix: DATE}
+  PSPRS:
+    domain: motor
+    sources:
+      NIFD: {column: PSPRS_TOTAL, date_column: PSPRS_DC_DATE}
+      4RTNI: {instrument: PSPRS, suffix: TOTAL, date_suffix: DATE}
+  BIS:
+    domain: behaviour
+    sources:
+      NIFD: {column: BIS_TOT, date_column: BISBAS_DCDATE}
+      4RTNI: {instrument: BIS, suffix: BIS_TOT, date_suffix: DATE}
+  BAS:
+    domain: behaviour
+    sources:
+      NIFD: {column: BAS_TOT, date_column: BISBAS_DCDATE}
+  IRI_EC:
+    domain: behaviour
+    sources:
+      NIFD: {column: IRI_FTDIRIEC, date_column: IRI_DCDATE}
+      4RTNI: {instrument: IRI, suffix: IRIEC, date_suffix: DATE}
+  IRI_PT:
+    domain: behaviour
+    sources:
+      NIFD: {column: IRI_FTDIRIPT, date_column: IRI_DCDATE}
+      4RTNI: {instrument: IRI, suffix: IRIPT, date_suffix: DATE}
+  UPDRS:
+    domain: motor
+    sources:
+      NIFD: {column: MDEXAM_UPDRS, date_column: MDEXAM_DCDATE}
+      MCSA: {column: TOT_MOD_UPDRS}
+      4RTNI: {instrument: UPDRS, suffix: TOTAL, date_suffix: DATE}
+  UHDRS:
+    domain: motor
+    sources:
+      NIFD: {column: MDEXAM_UHDRS, date_column: MDEXAM_DCDATE}
+  LM_I_cog:
+    domain: memory
+    sources:
+      ABVIB: {table: cogscor, column: LMIAI}
+  VF_anim_cog:
+    domain: language
+    sources:
+      ABVIB: {table: cogscor, column: CFTOTANI}
+  VF_F_cog:
+    domain: language
+    sources:
+      ABVIB: {table: cogscor, column: CFTOTALF}
+  DigSym_cog:
+    domain: attention
+    sources:
+      ABVIB: {table: cogscor, column: WAISRTOT}
+  BNT_30:
+    domain: language
+    sources:
+      ABVIB: {table: cogscor, column: BNTCORR30}
+  BNT_60:
+    domain: language
+    sources:
+      ABVIB: {table: cogscor, column: BNTCORR60}
+  TMT_A_cog:
+    domain: executive_attention
+    sources:
+      ABVIB: {table: cogscor, column: TRAILSA}
+  TMT_B_cog:
+    domain: executive_attention
+    sources:
+      ABVIB: {table: cogscor, column: TRAILSB}
+  GDS_cog:
+    domain: mood
+    sources:
+      ABVIB: {table: cogscor, column: GDS}
+  VF_A_cog:
+    domain: language
+    sources:
+      ABVIB: {table: cogscor, column: VFTOTALA}
+  VF_S_cog:
+    domain: language
+    sources:
+      ABVIB: {table: cogscor, column: VFTOTALS}
+  Glucose:
+    label: Blood glucose
+    domain: lab
+    expand: true
+    sources:
+      ABVIB: {table: lab, column: GLUCOSE}
+  Cholesterol:
+    label: Total cholesterol
+    domain: lab
+    expand: true
+    sources:
+      ABVIB: {table: lab, column: CHOL}
+      PREVENTAD: {table: lab, column: total_cholesterol_value}
+  LDL:
+    label: LDL cholesterol
+    domain: lab
+    sources:
+      ABVIB: {table: lab, column: LDL}
+      PREVENTAD: {table: lab, column: LDL_value}
+  HDL:
+    label: HDL cholesterol
+    domain: lab
+    sources:
+      ABVIB: {table: lab, column: HDL}
+      PREVENTAD: {table: lab, column: HDL_value}
+  hsCRP:
+    domain: lab
+    sources:
+      ABVIB: {table: lab, column: HSCRP}
+  HbA1c:
+    label: Glycated haemoglobin
+    domain: lab
+    expand: true
+    sources:
+      ABVIB: {table: lab, column: HGBA1C}
+      PREVENTAD: {table: lab, column: hba1c_value}
+  Fasting:
+    domain: lab
+    expand: true
+    sources:
+      ABVIB: {table: subcat, column: FASTING}
+  Diabetes:
+    domain: health_lifestyle
+    expand: true
+    sources:
+      ABVIB: {table: subcat, column: DIABETS}
+      MCSA: {column: DiabetesGS}
+  STMS:
+    domain: global_cognition
+    sources:
+      MCSA: {column: SHTOTSC}
+  pz_memory:
+    domain: global_cognition
+    sources:
+      MCSA: {column: pzmemory}
+  pz_language:
+    domain: global_cognition
+    sources:
+      MCSA: {column: pzlanguage}
+  pz_attention:
+    domain: global_cognition
+    sources:
+      MCSA: {column: pzattention}
+  pz_visuospatial:
+    domain: global_cognition
+    sources:
+      MCSA: {column: pzvisualsp}
+  pz_global:
+    domain: global_cognition
+    sources:
+      MCSA: {column: pzglobal}
+  SmellTest:
+    domain: other
+    sources:
+      MCSA: {column: SMELLTOT}
+  ECOG:
+    domain: function
+    sources:
+      MCSA: {column: ECOG_Global}
+  ECOG_12:
+    domain: function
+    sources:
+      MCSA: {column: ECOG_12item}
+  BAI:
+    domain: mood
+    sources:
+      MCSA: {column: BAItot}
+  BDI:
+    domain: mood
+    sources:
+      MCSA: {column: BDITOT}
+  NPI_count:
+    domain: behaviour
+    sources:
+      MCSA: {column: n_npsych_symp}
+  Blessed:
+    domain: global_cognition
+    sources:
+      MCSA: {column: BLESSTOT}
+  Hachinski:
+    domain: other
+    sources:
+      MCSA: {column: HACHTOT}
+  ESS_informant:
+    domain: other
+    sources:
+      MCSA: {column: ESSscore}
+  ESS_subject:
+    domain: other
+    sources:
+      MCSA: {column: ESSscore_Subject}
+  SmokingStatus:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: SmokeStat}
+  Exercise_PastYear:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: EXWkEq12score}
+  Exercise_Midlife:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: EXWkEq50score}
+  CognSoc_PastYear:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: CSWkEq12score}
+  CognSoc_Midlife:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: CSWkEq50score}
+  Diet_Calories:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: Cals_kcal_}
+  Diet_Fat_Cal:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: Cals_from_fat_kcal_}
+  Hippo_Vol:
+    domain: imaging_derived
+    sources:
+      MCSA: {column: HPVOL, date_column: ImagingDate}
+  TIV:
+    domain: imaging_derived
+    sources:
+      MCSA: {column: TIV, date_column: ImagingDate}
+  HVA:
+    domain: imaging_derived
+    sources:
+      MCSA: {column: HVA, date_column: ImagingDate}
+  PIB_SUVR:
+    domain: imaging_derived
+    sources:
+      MCSA: {column: PIB_SUVR, date_column: ImagingDate}
+  PIB_Centiloid:
+    domain: imaging_derived
+    sources:
+      MCSA: {column: PIB_CENTILOID, date_column: ImagingDate}
+  PIB_Abnormal:
+    domain: imaging_derived
+    sources:
+      MCSA: {column: ABNORMAL_PIB, date_column: ImagingDate}
+  Hypertension:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: HypertensionTxGS}
+  Dyslipidemia:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: DyslipidemiaTxGS}
+  MI:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: MIGS}
+  Stroke:
+    domain: health_lifestyle
+    sources:
+      MCSA: {column: StrokeGS}
+  Diabetes_med_Insulin:
+    domain: health_lifestyle
+    expand: true
+    sources:
+      MCSA: {column: InsulinTx}
+  Diabetes_med_Metformin:
+    domain: health_lifestyle
+    expand: true
+    sources:
+      MCSA: {column: Metformin}
+  Diabetes_med_OralAgent:
+    domain: health_lifestyle
+    expand: true
+    sources:
+      MCSA: {column: OralAgent}
+  Diabetes_med_OralOther:
+    domain: health_lifestyle
+    expand: true
+    sources:
+      MCSA: {column: OralAgentOTMF}
+  Diabetes_med:
+    label: Current diabetes medication
+    domain: medication
+    expand: true
+    sources:
+      MCSA:
+        transform: max
+        items: [InsulinTx, Metformin, OralAgent, OralAgentOTMF]
+        note: any diabetes medication (1 = taking)
+      NACC:
+        column: NACCDBMD
+        valid_codes: [0, 1, 2]
+  PSPRS_History:
+    domain: motor
+    sources:
+      4RTNI: {instrument: PSPRS, suffix: SUBSCORE_HISTORY, date_suffix: DATE}
+  PSPRS_Mentation:
+    domain: motor
+    sources:
+      4RTNI: {instrument: PSPRS, suffix: SUBSCORE_MENTATION, date_suffix: DATE}
+  PSPRS_Bulbar:
+    domain: motor
+    sources:
+      4RTNI: {instrument: PSPRS, suffix: SUBSCORE_BULBAR, date_suffix: DATE}
+  PSPRS_Ocular:
+    domain: motor
+    sources:
+      4RTNI: {instrument: PSPRS, suffix: SUBSCORE_OCULARMOTOR, date_suffix: DATE}
+  PSPRS_Limb:
+    domain: motor
+    sources:
+      4RTNI: {instrument: PSPRS, suffix: SUBSCORE_LIMBMOTOR, date_suffix: DATE}
+  PSPRS_Gait:
+    domain: motor
+    sources:
+      4RTNI: {instrument: PSPRS, suffix: SUBSCORE_GAITMIDLINE, date_suffix: DATE}
+  UPDRS_PDNormal:
+    domain: motor
+    sources:
+      4RTNI: {instrument: UPDRS, suffix: PDNORMAL, date_suffix: DATE}
+      OASIS: {table: motor, column: PDNORMAL}
+  UPDRS_Imputed:
+    domain: motor
+    sources:
+      4RTNI: {instrument: UPDRS, suffix: IMPUTED, date_suffix: DATE}
+  CVLT_cued:
+    domain: memory
+    sources:
+      4RTNI: {instrument: CVLT, suffix: CUEDCOR, date_suffix: DATE}
+  CVLT_long:
+    domain: memory
+    sources:
+      4RTNI: {instrument: CVLT, suffix: CORRLONG, date_suffix: DATE}
+  Benson_copy:
+    domain: memory
+    sources:
+      4RTNI: {instrument: BENSON, suffix: MODREY, date_suffix: DATE}
+  Benson_10m:
+    domain: memory
+    sources:
+      4RTNI: {instrument: BENSON, suffix: REY10M, date_suffix: DATE}
+  Benson_recog:
+    domain: memory
+    sources:
+      4RTNI: {instrument: BENSON, suffix: REYRECG, date_suffix: DATE}
+  BNT_total:
+    domain: language
+    sources:
+      4RTNI: {instrument: BNT, suffix: BNTTOT, date_suffix: DATE}
+  BNT_corr:
+    domain: language
+    sources:
+      4RTNI: {instrument: BNT, suffix: BNTCORR, date_suffix: DATE}
+  Stroop_CW:
+    domain: executive_attention
+    sources:
+      4RTNI: {instrument: STROOP, suffix: STRPCNCOR, date_suffix: DATE}
+  Stroop_C:
+    domain: executive_attention
+    sources:
+      4RTNI: {instrument: STROOP, suffix: STRPCOR, date_suffix: DATE}
+  VOSP:
+    domain: other
+    sources:
+      4RTNI: {instrument: VOSP, suffix: NUMBLOC, date_suffix: DATE}
+  WRAT4:
+    domain: other
+    sources:
+      4RTNI: {instrument: WRAT4, suffix: WRATTOT, date_suffix: DATE}
+  CDR_Memory:
+    domain: global_staging
+    sources:
+      4RTNI: {instrument: CDR, suffix: MEMORY, date_suffix: DATE}
+      A4: {table: cdr, column: MEMORY}
+      OASIS: {table: cdr, column: memory}
+  CDR_Behavior:
+    domain: global_staging
+    sources:
+      4RTNI: {instrument: CDR, suffix: BEHAV, date_suffix: DATE}
+  CDR_Motor:
+    domain: global_staging
+    sources:
+      4RTNI: {instrument: CDR, suffix: MOTOR, date_suffix: DATE}
+  SNQ22:
+    domain: behaviour
+    sources:
+      4RTNI: {instrument: SNQ22, suffix: QTOTC, date_suffix: DATE}
+  RSMS:
+    domain: behaviour
+    sources:
+      4RTNI: {instrument: RSMS, suffix: RSMSTOTI, date_suffix: DATE}
+  RSMS_SelfPres:
+    domain: behaviour
+    sources:
+      4RTNI: {instrument: RSMS, suffix: RSMSSUB1I, date_suffix: DATE}
+  RSMS_Expressive:
+    domain: behaviour
+    sources:
+      4RTNI: {instrument: RSMS, suffix: RSMSSUB2I, date_suffix: DATE}
+  CDR_Orient:
+    domain: global_staging
+    sources:
+      A4: {table: cdr, column: ORIENT}
+      OASIS: {table: cdr, column: orient}
+  FCSR_FreeRecall:
+    domain: memory
+    sources:
+      A4: {table: cogfcsr16, column: FCTOTF}
+  FCSR_CuedRecall:
+    domain: memory
+    sources:
+      A4: {table: cogfcsr16, column: FCTOTC}
+  FCSR_Total:
+    domain: memory
+    sources:
+      A4: {table: cogfcsr16, column: FCTOTAL}
+  CFI_patient:
+    domain: function
+    sources:
+      A4: {table: cfi, column: CFIPTTOTAL}
+  CFI_partner:
+    domain: function
+    sources:
+      A4: {table: cfisp, column: CFSPTTOTAL}
+  IES:
+    domain: mood
+    sources:
+      A4: {table: ies, column: IESCORE}
+  Pulse:
+    label: Pulse (beats/min)
+    domain: vitals
+    sources:
+      A4: {table: vitals, column: VSPULSE}
+      PREVENTAD: {table: bp_weight, column: Pulse}
+      OASIS: {table: vitals, column: HRATE}
+      NACC: {column: HRATE}
+  Sleep_hrs:
+    domain: health_lifestyle
+    sources:
+      A4: {table: habits, column: SLEEP}
+  Exercise_aerobic:
+    domain: health_lifestyle
+    sources:
+      A4: {table: habits, column: AEROBIC}
+  Exercise_walking:
+    domain: health_lifestyle
+    sources:
+      A4: {table: habits, column: WALKING}
+  Alcohol:
+    domain: health_lifestyle
+    sources:
+      A4: {table: habits, column: ALCOHOL}
+  Caffeine:
+    domain: health_lifestyle
+    sources:
+      A4: {table: habits, column: CAFFEINE}
+  Smoking:
+    domain: health_lifestyle
+    sources:
+      A4: {table: habits, column: SMOKE}
+  ADLPQ:
+    label: ADL Prevention Questionnaire, total
+    domain: function
+    sources:
+      A4:
+        table: adlpq
+        transform: sum
+        items: [ASCBOOK, ASTRAVL, ASAPPLI, ASLAUN, ASPAY, ASSNACK, ASTIMES, ASFIND, ASWDOWN, ASMOVIE, ASCEVNT, ASPHONE, ASMEDS,
+          ASPLAN]
+  PACC:
+    label: Preclinical Alzheimer Cognitive Composite
+    domain: global_cognition
+    sources:
+      A4:
+        table: sppacc
+        column: PACCRN
+        row_filter: {column: PACCNAME, pattern: composite|PACC|total}
+  MoCA_DelayedRecall:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: el_cdr_moca, column: delayed_recall_score}
+  MoCA_Orientation:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: el_cdr_moca, column: orientation_score}
+  CDR_FU:
+    domain: global_staging
+    sources:
+      PREVENTAD: {table: cdr_fu, column: CDR_total_score}
+  RAVLT_Recog:
+    domain: memory
+    sources:
+      PREVENTAD: {table: ravlt, column: List_A_Recognition_Recognized}
+  RBANS_total:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: rbans, column: total_scale_index_score}
+  RBANS_ImmMem:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: rbans, column: immediate_memory_index_score}
+  RBANS_DelMem:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: rbans, column: delayed_memory_index_score}
+  RBANS_Attn:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: rbans, column: attention_index_score}
+  DS_RBANS:
+    domain: attention
+    sources:
+      PREVENTAD: {table: rbans, column: digit_span_score}
+  VF_anim_RBANS:
+    domain: language
+    sources:
+      PREVENTAD: {table: rbans, column: semantic_fluency_score}
+  DigSym_RBANS:
+    domain: attention
+    sources:
+      PREVENTAD: {table: rbans, column: coding_score}
+  Stroop_CN:
+    domain: executive_attention
+    sources:
+      PREVENTAD: {table: dkefs, column: Color_Naming_Time}
+  Stroop_Inhib:
+    domain: executive_attention
+    sources:
+      PREVENTAD: {table: dkefs, column: Inhibition_Time}
+  Stroop_Inhib_scaled:
+    domain: executive_attention
+    sources:
+      PREVENTAD: {table: dkefs, column: Inhibition_Scaled_Score}
+  Stroop_Switch_scaled:
+    domain: executive_attention
+    sources:
+      PREVENTAD: {table: dkefs, column: Switching_Scaled_Score}
+  AD8:
+    domain: global_cognition
+    sources:
+      PREVENTAD: {table: ad8, column: AD8_total_score}
+  APS:
+    domain: other
+    sources:
+      PREVENTAD: {table: aps, column: APS_score}
+  UPSIT:
+    domain: other
+    sources:
+      PREVENTAD: {table: smell, column: UPSIT_total_score}
+  CAIDE:
+    domain: other
+    sources:
+      PREVENTAD: {table: el_caide, column: CAIDE_total_score}
+  Diabetes_treatment:
+    domain: health_lifestyle
+    expand: true
+    sources:
+      PREVENTAD: {table: el_medical, column: treatment_diabetes}
+  CAIDE_BMI:
+    domain: other
+    expand: true
+    sources:
+      PREVENTAD: {table: el_caide, column: CAIDE_BMI_subscore}
+  CDR_Judgment:
+    domain: global_staging
+    sources:
+      OASIS: {table: cdr, column: judgment}
+  CDR_Community:
+    domain: global_staging
+    sources:
+      OASIS: {table: cdr, column: commun}
+  CDR_Home:
+    domain: global_staging
+    sources:
+      OASIS: {table: cdr, column: homehobb}
+  CDR_PersonalCare:
+    domain: global_staging
+    sources:
+      OASIS: {table: cdr, column: perscare}
+  TMT_A_UDS:
+    domain: executive_attention
+    sources:
+      OASIS: {table: neuro, column: TRAILA}
+  LM_Delay:
+    domain: memory
+    sources:
+      OASIS: {table: neuro, column: lmdelay}
+  Craft_I:
+    domain: memory
+    sources:
+      OASIS: {table: neuro, column: craftvrs}
+      NACC: {column: CRAFTVRS}
+  Craft_II:
+    domain: memory
+    sources:
+      OASIS: {table: neuro, column: craftdvr}
+  UPDRS_Brady:
+    domain: motor
+    sources:
+      OASIS: {table: motor, column: BRADYKIN}
+  SEIZURES:
+    label: UDS A5 seizures (0 absent, 1 recent/active, 2 remote)
+    domain: health_history
+    expand: true
+    sources:
+      OASIS:
+        table: health
+        column: SEIZURES
+        case_insensitive: true
+        valid_codes: [0, 1, 2]
+      NACC:
+        column: SEIZURES
+        valid_codes: [0, 1, 2]
+  DIABETES:
+    label: UDS A5 diabetes (0 absent, 1 recent/active, 2 remote)
+    domain: health_history
+    expand: true
+    sources:
+      OASIS:
+        table: health
+        column: DIABETES
+        case_insensitive: true
+        valid_codes: [0, 1, 2]
+      NACC:
+        column: DIABETES
+        valid_codes: [0, 1, 2]
+  DIABTYPE:
+    label: UDS A5 diabetes type (1, 2, 3 other)
+    domain: health_history
+    expand: true
+    sources:
+      OASIS:
+        table: health
+        column: DIABTYPE
+        case_insensitive: true
+        valid_codes: [1, 2, 3]
+      NACC:
+        column: DIABTYPE
+        valid_codes: [1, 2, 3]
+  EPILEP:
+    label: UDS D1 epilepsy diagnosis (0/1)
+    domain: health_history
+    expand: true
+    sources:
+      OASIS:
+        table: dx
+        column: EPILEP
+        case_insensitive: true
+        valid_codes: [0, 1]
+      NACC:
+        column: EPILEP
+        valid_codes: [0, 1]
+  EPILEPIF:
+    label: UDS D1 epilepsy contribution (1 primary, 2 contributing, 3 non-contributing)
+    domain: health_history
+    expand: true
+    sources:
+      OASIS:
+        table: dx
+        column: EPILEPIF
+        case_insensitive: true
+        valid_codes: [1, 2, 3]
+      NACC:
+        column: EPILEPIF
+        valid_codes: [1, 2, 3]
+  marital_status:
+    label: Marital status (UDS code)
+    domain: demographics
+    kind: categorical
+    sources:
+      OASIS: {table: demo_a1, column: MARISTAT}
+  living_situation_v2:
+    label: Living situation (UDS v2 code)
+    domain: demographics
+    kind: categorical
+    sources:
+      OASIS: {table: demo_a1, column: LIVSIT}
+  living_situation_v3:
+    label: Living situation (UDS v3 code)
+    domain: demographics
+    kind: categorical
+    sources:
+      OASIS: {table: demo_a1, column: LIVSITUA}
+  independence_level:
+    label: Level of independence (UDS code)
+    domain: demographics
+    kind: categorical
+    sources:
+      OASIS: {table: demo_a1, column: INDEPEND}
+  residence_type:
+    label: Type of residence (UDS code)
+    domain: demographics
+    kind: categorical
+    sources:
+      OASIS: {table: demo_a1, column: RESIDENC}
+  LM_time:
+    domain: memory
+    sources:
+      NACC: {column: MEMTIME}
+  Craft_D:
+    domain: memory
+    sources:
+      NACC: {column: CRAFTDVR}
+  Antiepileptic_med:
+    label: Current antiepileptic medication (NACC derived)
+    domain: medication
+    expand: true
+    sources:
+      NACC:
+        column: NACCEPMD
+        valid_codes: [0, 1, 2]
+  DIABET:
+    label: UDS D2 clinician-assessed diabetes (0 no, 1 type 1, 2 type 2, 3 other)
+    domain: health_history
+    expand: true
+    sources:
+      NACC:
+        column: DIABET
+        valid_codes: [0, 1, 2, 3]
+  Neuro_history:
+    label: Neurologic history other than AD (1/0; ADNI MEDHIST, AIBL MH2NEURL, A4 INITHEALTH)
+    domain: health_history
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  Endo_history:
+    label: Endocrine-metabolic history (1/0; AIBL MH9ENDO, A4 INITHEALTH)
+    domain: health_history
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  ABETA42:
+    label: CSF amyloid-beta 1-42 (main CSF panel of the cohort)
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  ABETA40:
+    label: CSF amyloid-beta 1-40
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  PTAU:
+    label: CSF phospho-tau 181
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  TAU:
+    label: CSF total tau
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  ABETA42_lumipulse:
+    label: CSF amyloid-beta 1-42, Lumipulse (PREVENT-AD)
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  ABETA40_lumipulse:
+    label: CSF amyloid-beta 1-40, Lumipulse (PREVENT-AD)
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  PTAU217_CSF:
+    label: CSF phospho-tau 217 (PREVENT-AD)
+    domain: csf
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  Plasma_pTau217_simoa:
+    label: Plasma p-tau217, Simoa (PREVENT-AD)
+    domain: plasma
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  Plasma_pTau181_simoa:
+    label: Plasma p-tau181, Simoa (PREVENT-AD)
+    domain: plasma
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.
+  Plasma_pTau231_simoa:
+    label: Plasma p-tau231, Simoa (PREVENT-AD)
+    domain: plasma
+    expand: true
+    builtin: true
+    description: Produced by dataset code (fluid-biomarker / history builders); listed here so it can be expanded and documented.

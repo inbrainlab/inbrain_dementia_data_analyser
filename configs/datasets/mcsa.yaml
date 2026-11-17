@@ -1,0 +1,20 @@
+# MCSA - dataset configuration. See docs/configuration.md.
+name: MCSA
+label: Mayo Clinic Study of Aging
+portal: LONI IDA - https://ida.loni.usc.edu
+folder: Tables_MCSA
+output_folder: Integrated_MCSA
+output_file: MCSA_longitudinal.csv
+subject_id: mcsa_id
+time_axis: date
+module: mcsa
+default_table: data
+ida:
+  enabled: true
+  required: false
+tables:
+  data:
+    pattern: MCSA_Data_{date}.csv
+    id_columns: [mcsa_id, MCSA_ID]
+    date_columns: [VisitDate]
+    description: One wide file, one row per visit (dates shifted per subject)

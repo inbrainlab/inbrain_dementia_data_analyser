@@ -1,0 +1,12 @@
+Copyright (c) 2026 InBrain lab, University of Sao Paulo. All rights reserved.
+
+A licence has not been chosen yet. Choose one (for example MIT or BSD-3-Clause
+for the code) before the repository is made public or the paper is submitted,
+and replace this file.
+
+This repository contains code and configuration only. The datasets it reads
+(ADNI, A4/LEARN, ABVIB, AIBL, MCSA, NACC, NIFD, OASIS-3, PREVENT-AD, 4RTNI) are
+distributed by their owners under data use agreements and are NOT part of this
+repository. Each user must obtain them from the original portals and follow
+the corresponding agreements, including their acknowledgement and publication
+policies.

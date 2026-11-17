@@ -1,0 +1,75 @@
+# =============================================================================
+# IMAGING TYPES AND MEASURE GROUPS
+# =============================================================================
+# types                 canonical imaging families written by the pipelines
+#                       (all_<name>_date, <name>_IDs, all_<name>_image_ids, ...);
+#                       expand: false keeps a type out of the expanded master
+# measure_groups        names that stand for several imaging types in the
+#                       cohort tools (any amyloid tracer, any tau tracer)
+# fluid_group_patterns  regular expressions selecting fluid-biomarker families
+#                       (Plasma_*, CSF_*) for the cohort tools
+# =============================================================================
+types:
+- name: MRI_T1w
+  description: 3D T1-weighted MRI
+  modality: MRI
+- name: MRI_T2w
+  description: T2-weighted MRI
+  modality: MRI
+- name: MRI_T2star
+  description: T2*-weighted / SWI MRI
+  modality: MRI
+- name: MRI_T2w_FLAIR
+  description: T2 FLAIR MRI
+  modality: MRI
+- name: MRI_ASL
+  description: Arterial spin labelling
+  modality: MRI
+- name: MRI_fMRI
+  description: Resting-state / task fMRI
+  modality: MRI
+- name: MRI_DTI
+  description: Diffusion MRI
+  modality: MRI
+- name: PET_FDG
+  description: FDG PET
+  modality: PET
+- name: ABETA_AV45
+  description: Amyloid PET, florbetapir (AV-45)
+  modality: PET
+- name: ABETA_FBB
+  description: Amyloid PET, florbetaben
+  modality: PET
+- name: ABETA_Flutemetamol
+  description: Amyloid PET, flutemetamol
+  modality: PET
+- name: ABETA_NAV4694
+  description: Amyloid PET, NAV4694
+  modality: PET
+- name: ABETA_PIB
+  description: Amyloid PET, Pittsburgh compound B
+  modality: PET
+- name: TAU_Flortaucipir
+  description: Tau PET, flortaucipir (AV-1451)
+  modality: PET
+- name: TAU_MK6240
+  description: Tau PET, MK-6240
+  modality: PET
+- name: TAU_PI2620
+  description: Tau PET, PI-2620
+  modality: PET
+- name: MRI_T1w_1.5T
+  description: AIBL 1.5 T T1-weighted MRI (kept apart from MRI_T1w)
+  modality: MRI
+  expand: false
+measure_groups:
+  PET_ABETA: [ABETA_AV45, ABETA_FBB, ABETA_Flutemetamol, ABETA_NAV4694, ABETA_PIB]
+  PET_TAU: [TAU_Flortaucipir, TAU_MK6240, TAU_PI2620]
+fluid_group_patterns:
+  PLASMA_PTAU217: ^Plasma_pTau217_(?!ratio|AB42)
+  PLASMA_PTAU181: ^Plasma_pTau181_
+  PLASMA_NFL: ^Plasma_(NfL|NFL)(_|$)
+  PLASMA_GFAP: ^Plasma_GFAP(_|$)
+  PLASMA_AB42_40: ^Plasma_(AB42_40|AB_ratio)_
+  CSF_PTAU: ^(PTAU$|CSF_pTau181_)
+  CSF_AB42: ^(ABETA42(_lumipulse)?$|CSF_AB42_(?!40))

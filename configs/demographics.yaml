@@ -1,0 +1,191 @@
+# =============================================================================
+# DEMOGRAPHIC CODEBOOKS (applied by integration.merge -> harmonise_demographics)
+# =============================================================================
+# Every pre-processing pipeline writes the RAW code of its own data dictionary,
+# and the same number means different things from one cohort to the next (race
+# 5 = White in ADNI / A4 / OASIS but Asian in NACC; race 6 = "more than one" in
+# ADNI but "unknown" in A4 ...). The merge rewrites the columns with ONE
+# vocabulary and keeps the originals in <column>_raw:
+#   gender         M | F
+#   race           White | Black | Asian | AIAN | NHPI | Multiracial | Other |
+#                  Non-White (unspecified)          (null = unknown -> missing)
+#   race_detail    components when several races were ticked ('AIAN+White')
+#   hispanic       1.0 | 0.0
+#   education      years (sentinels and values above education_max_years -> missing)
+#   handedness     R | L | A
+#   APOE_genotype  e2/e2 ... e4/e4 (lower allele first), APOE_e4_count, APOE_e4_any
+# Keys are raw codes as text, lower case ('1', 'caucasian'). A code that is not
+# listed becomes missing and is reported at the end of the merge.
+# =============================================================================
+sex_standard:
+  '1': M
+  '2': F
+  m: M
+  f: F
+  male: M
+  female: F
+sex_codes:
+  MCSA:
+    '1': M
+    '0': F
+race_codes:
+  ADNI:
+    '1': AIAN
+    '2': Asian
+    '3': NHPI
+    '4': Black
+    '5': White
+    '6': Multiracial
+    '7': null
+    '8': NHPI
+    '9': NHPI
+    '-4': null
+  A4:
+    '1': AIAN
+    '2': Asian
+    '3': NHPI
+    '4': Black
+    '5': White
+    '6': null
+  OASIS:
+    '1': AIAN
+    '2': Asian
+    '3': NHPI
+    '4': Black
+    '5': White
+    '6': Multiracial
+    '0': null
+  NACC:
+    '1': White
+    '2': Black
+    '3': AIAN
+    '4': NHPI
+    '5': Asian
+    '6': Multiracial
+    '50': Other
+    '99': null
+    '-4': null
+  ABVIB:
+    '1': White
+    '2': Black
+    '3': AIAN
+    '4': NHPI
+    '5': Asian
+    '6': Multiracial
+    '50': Other
+    '99': null
+    '-4': null
+  NIFD:
+    '1': White
+    '2': Black
+    '3': AIAN
+    '4': NHPI
+    '5': Asian
+    '6': Multiracial
+    '50': Other
+    '99': null
+    '-4': null
+  4RTNI:
+    '1': White
+    '2': Black
+    '3': Asian
+    '4': NHPI
+    '5': Multiracial
+    '6': null
+  MCSA:
+    '1': White
+    '2': Non-White (unspecified)
+    '3': Multiracial
+    '4': null
+  PREVENTAD:
+    caucasian: White
+    other: Other
+race_text:
+  white: White
+  black: Black
+  black or african american: Black
+  asian: Asian
+  aian: AIAN
+  american indian or alaska native: AIAN
+  american indian or alaskan native: AIAN
+  nhpi: NHPI
+  native hawaiian or pacific islander: NHPI
+  native hawaiian or other pacific islander: NHPI
+  more than one: Multiracial
+  more than one race: Multiracial
+  multiracial: Multiracial
+  other: Other
+  non-white (unspecified): Non-White (unspecified)
+  unknown: null
+  unknown or not reported: null
+hispanic_codes:
+  NACC:
+    '0': 0.0
+    '1': 1.0
+    '9': null
+    '-4': null
+  ABVIB:
+    '0': 0.0
+    '1': 1.0
+    '9': null
+    '-4': null
+  OASIS:
+    '0': 0.0
+    '1': 1.0
+    '9': null
+    '-4': null
+  A4:
+    '1': 1.0
+    '2': 0.0
+    '3': null
+  MCSA:
+    '1': 1.0
+    '2': 0.0
+  4RTNI:
+    '0': 0.0
+    '1': 1.0
+    '2': null
+hispanic_default:
+  '0': 0.0
+  '1': 1.0
+  '9': null
+  '-4': null
+handedness_codes:
+  NACC:
+    '1': L
+    '2': R
+    '3': A
+    '9': null
+    '-4': null
+  ABVIB:
+    '1': L
+    '2': R
+    '3': A
+    '9': null
+    '-4': null
+handedness_text:
+  r: R
+  l: L
+  b: A
+  a: A
+  right-handed: R
+  left-handed: L
+  ambidextrous: A
+  right: R
+  left: L
+education_sentinels: [88, 99, 888, 999]
+education_max_years: 40
+nacc_old_apoe_fix:
+  e2/e2: e3/e3
+  e2/e3: e3/e4
+  e2/e4: e2/e3
+  e3/e3: e4/e4
+  e3/e4: e2/e4
+  e4/e4: e2/e2
+nacc_apoe_codes:
+  '1': e3/e3
+  '2': e3/e4
+  '3': e2/e3
+  '4': e4/e4
+  '5': e2/e4
+  '6': e2/e2

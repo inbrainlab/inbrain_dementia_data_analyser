@@ -1,0 +1,11 @@
+# T1w visits at 0 / 24 / 48 months (+/- 9) where each visit has a CDR and an
+# amyloid PET within 12 months; FDG reported when present. At least 2 visits.
+tool: longitudinal_multimodal
+output_prefix: T1_CDR_amyloid_long
+schedule_modality: MRI_T1w
+required: [CDR, PET_ABETA]
+optional: [PET_FDG]
+margin_months: 12
+visit_targets_months: [0, 24, 48]
+tolerance_months: 9
+min_visits: 2

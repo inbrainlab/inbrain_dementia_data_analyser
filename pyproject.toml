@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inbrain_dementia_data_analyser"
+version = "0.1.0"
+description = "Harmonisation of ten public dementia and ageing cohorts and creation of multimodal study cohorts (InBrain lab, University of Sao Paulo)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "InBrain lab, University of Sao Paulo" }]
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.23",
+    "openpyxl>=3.1",
+    "PyYAML>=6.0",
+    "scipy>=1.9",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+inbrain-dementia = "inbrain_dementia_data_analyser.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+# The YAML configuration is also installed under <prefix>/share/... so that a
+# regular (non-editable) install finds it. Editable installs and clones use
+# the repository's configs/ folder directly.
+[tool.setuptools.data-files]
+"share/inbrain_dementia_data_analyser/configs" = ["configs/*.yaml"]
+"share/inbrain_dementia_data_analyser/configs/datasets" = ["configs/datasets/*.yaml"]
+"share/inbrain_dementia_data_analyser/configs/cohorts" = ["configs/cohorts/*.yaml"]

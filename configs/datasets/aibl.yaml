@@ -1,0 +1,79 @@
+# AIBL - dataset configuration. See docs/configuration.md.
+name: AIBL
+label: Australian Imaging, Biomarker and Lifestyle study
+portal: LONI IDA - https://ida.loni.usc.edu (AIBL study data + image collection search)
+folder: Tables_AIBL
+output_folder: Integrated_AIBL
+output_file: AIBL_longitudinal.csv
+subject_id: RID
+time_axis: date
+module: aibl
+ida:
+  enabled: true
+  required: false
+tables:
+  dx:
+    pattern: aibl_pdxconv_{date}.csv
+    id_columns: [RID]
+    description: Diagnosis per visit (no exam date)
+  dx_date_src:
+    pattern: aibl_mmse_{date}.csv
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+    description: Exam dates borrowed for the diagnosis
+  demog:
+    pattern: aibl_ptdemog_{date}.csv
+    id_columns: [RID]
+  apoe:
+    pattern: aibl_apoeres_{date}.csv
+    id_columns: [RID]
+  mri_15t:
+    pattern: aibl_mrimeta_{date}.csv
+    required: false
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+    description: 1.5 T MRI metadata (fallback to IDA)
+  mri_3t:
+    pattern: aibl_mri3meta_{date}.csv
+    required: false
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+    description: 3 T MRI metadata (fallback to IDA)
+  pet_pib:
+    pattern: aibl_pibmeta_{date}.csv
+    required: false
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  pet_av45:
+    pattern: aibl_av45meta_{date}.csv
+    required: false
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  pet_flute:
+    pattern: aibl_flutemeta_{date}.csv
+    required: false
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  pet_nav:
+    pattern: aibl_navmeta_{date}.csv
+    required: false
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  neurobat:
+    pattern: aibl_neurobat_{date}.csv
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  mmse:
+    pattern: aibl_mmse_{date}.csv
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  cdr:
+    pattern: aibl_cdr_{date}.csv
+    id_columns: [RID]
+    date_columns: [EXAMDATE]
+  labdata:
+    pattern: aibl_labdata_{date}.csv
+    id_columns: [RID]
+  medhist:
+    pattern: aibl_medhist_{date}.csv
+    id_columns: [RID]

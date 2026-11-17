@@ -1,0 +1,47 @@
+# =============================================================================
+# DIAGNOSIS LABELS (applied by integration.merge to 1st_diag, Lst_diag, all_diag ...)
+# =============================================================================
+# Raw label (upper case) -> canonical label. Compound labels ('AD+VaD') and
+# visit lists ('CN|CN|MCI') are mapped token by token. Unknown tokens are kept
+# and listed at the end of the merge so this map can be extended.
+# =============================================================================
+diag_map:
+  CN: CN
+  CON: CN
+  CU: CN
+  NL: CN
+  NORMAL: CN
+  HC: CN
+  MCI: MCI
+  AD: AD
+  DEMENTIA: Dementia-NOS
+  DEMENTIA-NOS: Dementia-NOS
+  DEMENTED: Dementia-NOS
+  LBD: LBD
+  DLB: LBD
+  FTD: FTD
+  BVFTD: bvFTD
+  NFVPPA: nfvPPA
+  PNFA: nfvPPA
+  SVPPA: svPPA
+  SV: svPPA
+  PSP: PSP
+  CBS: CBS
+  CBD: CBS
+  MSA: MSA
+  VAD: VaD
+  PD: PD
+  HD: HD
+  PATIENT (OTHER): Unknown
+  OTHERDEM: Dementia-NOS
+  OTHERDX: OtherDx
+  OTH: Dementia-NOS
+  L_SD: Dementia-NOS
+  UNKNOWN: Unknown
+  ? ''
+  : Unknown
+  NAN: Unknown
+  NAT: Unknown
+  NONE: Unknown
+  ' ': Unknown
+label_columns: [1st_diag, Lst_diag, all_diag, Diag_total, diag_total]

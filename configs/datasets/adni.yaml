@@ -1,0 +1,328 @@
+# ADNI - dataset configuration. See docs/configuration.md.
+name: ADNI
+label: Alzheimer's Disease Neuroimaging Initiative
+portal: 'LONI IDA - https://ida.loni.usc.edu (study data: Download > Study Files)'
+folder: Tables_ADNI
+output_folder: Integrated_ADNI
+output_file: ADNI_longitudinal.csv
+subject_id: PTID
+time_axis: date
+module: adni
+tables:
+  dx:
+    pattern: All_Subjects_DXSUM_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE]
+    description: Diagnostic summary
+  demog:
+    pattern: PTDEMOG_{date}.csv
+    id_columns: [PTID, RID]
+    description: Participant demographics
+  study_entry:
+    pattern: All_Subjects_Study_Entry_{date}.csv
+    id_columns: [subject_id]
+    description: Study entry (age at entry)
+  apoe:
+    pattern: All_Subjects_APOERES_{date}.csv
+    id_columns: [PTID, RID]
+    description: APOE genotype
+  mri:
+    pattern: All_Subjects_Key_MRI_{date}.csv
+    id_columns: [subject_id]
+    date_columns: [image_date]
+    description: Key MRI image list
+  pet:
+    pattern: All_Subjects_PET_Images_{date}.csv
+    id_columns: [subject_id]
+    date_columns: [pet_date]
+    description: PET image list
+  neurobat:
+    pattern: All_Subjects_NEUROBAT_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+    description: Neuropsychological battery
+  mmse:
+    pattern: All_Subjects_MMSE_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  moca:
+    pattern: All_Subjects_MOCA_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  cdr:
+    pattern: All_Subjects_CDR_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  faq:
+    pattern: All_Subjects_FAQ_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  npiq:
+    pattern: All_Subjects_NPIQ_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  gds:
+    pattern: All_Subjects_GDSCALE_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  stai:
+    pattern: All_Subjects_STAIAD_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  ecog_pt:
+    pattern: All_Subjects_ECOG12PT_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [COLDATE]
+    description: Everyday Cognition 12-item, participant (items ECOGPT1-12)
+  ecog_sp:
+    pattern: All_Subjects_ECOG12SP_{date}.csv
+    id_columns: [PTID, RID]
+    description: Everyday Cognition 12-item, study partner
+  vitals:
+    pattern: VITALS_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE, VISDATE]
+  csf:
+    pattern: All_Subjects_UPENNBIOMK_ROCHE_ELECSYS_{date}.csv
+    id_columns: [PTID, RID]
+    date_columns: [EXAMDATE]
+    description: CSF Roche Elecsys (UPenn)
+settings:
+  plasma_specs:
+    UPENN_PLASMA_FUJIREBIO_QUANTERIX:
+      lab: UPenn ADNI Biomarker Core
+      markers:
+      - [pT217_F, Plasma_pTau217_Fujirebio, null, Fujirebio Lumipulse G]
+      - [AB42_F, Plasma_AB42_Fujirebio, null, Fujirebio Lumipulse G]
+      - [AB40_F, Plasma_AB40_Fujirebio, null, Fujirebio Lumipulse G]
+      - [AB42_AB40_F, Plasma_AB42_40_Fujirebio, null, Fujirebio Lumipulse G]
+      - [pT217_AB42_F, Plasma_pTau217_AB42_Fujirebio, null, Fujirebio Lumipulse G]
+      - [NfL_Q, Plasma_NfL_Quanterix, null, Quanterix Simoa]
+      - [GFAP_Q, Plasma_GFAP_Quanterix, null, Quanterix Simoa]
+      - [NfL_F, Plasma_NfL_Fujirebio, null, Fujirebio Lumipulse G]
+      - [GFAP_F, Plasma_GFAP_Fujirebio, null, Fujirebio Lumipulse G]
+    C2N_PRECIVITYAD2_PLASMA:
+      lab: C2N Diagnostics
+      kit: PrecivityAD2 (LC-MS/MS)
+      markers:
+      - [pT217_C2N, Plasma_pTau217_C2N]
+      - [npT217_C2N, Plasma_npTau217_C2N]
+      - [pT217_npT217_C2N, Plasma_pTau217_ratio_C2N]
+      - [AB42_C2N, Plasma_AB42_C2N]
+      - [AB40_C2N, Plasma_AB40_C2N]
+      - [AB42_AB40_C2N, Plasma_AB42_40_C2N]
+      - [APS2_C2N, Plasma_APS2_C2N]
+    LILLY_PTAU217_MSD600:
+      long: true
+      test_col: TESTCD
+      value_col: ORRES
+      name_tpl: Plasma_{test}_Lilly
+      lab: Lilly Clinical Diagnostics Laboratory
+      kit: MSD p-tau217 electrochemiluminescence immunoassay
+    JANSSEN_PLASMA_P217_TAU:
+      lab: Janssen
+      kit: Simoa p217+tau (Janssen)
+      markers:
+      - [DILUTION_CORRECTED_CONC, Plasma_pTau217_Janssen]
+    FNIH_PLASMA_PTAU_PROJECT:
+      split_col: IMMUNOASSAY
+      method: IMMUNOASSAY
+      lab: FNIH Biomarkers Consortium
+      markers:
+      - [PTAU_181, Plasma_pTau181_FNIH]
+      - [PTAU_231, Plasma_pTau231_FNIH]
+    UGOTPTAU181:
+      lab: Univ. Gothenburg Clinical Neurochemistry Lab
+      kit: Simoa in-house p-tau181
+      markers:
+      - [PLASMAPTAU181, Plasma_pTau181_UGOT]
+    BLENNOWPLASMANFLLONG:
+      lab: Univ. Gothenburg (Blennow lab)
+      kit: Simoa NF-light
+      markers:
+      - [PLASMA_NFL, Plasma_NfL_Blennow]
+    BLENNOWPLASMANFL:
+      lab: Univ. Gothenburg (Blennow lab)
+      kit: Simoa NF-light
+      markers:
+      - [PLASMA_NFL, Plasma_NfL_BlennowADNI1]
+    BLENNOWPLASMATAU:
+      lab: Univ. Gothenburg (Blennow lab)
+      kit: Simoa total tau
+      markers:
+      - [PLASMATAU, Plasma_tTau_Blennow]
+    PLASMA_ABETA_PROJECT_ADX_VUMC:
+      lab: ADx NeuroSciences / VUmc
+      markers:
+      - [ABETA40, Plasma_AB40_ADx]
+      - [ABETA42, Plasma_AB42_ADx]
+      - [GFAP, Plasma_GFAP_ADx]
+      - [NF_LIGHT, Plasma_NfL_ADx]
+    PLASMA_ABETA_PROJECT_QUANTERIX:
+      lab: Quanterix
+      kit: Simoa
+      markers:
+      - [AB1_40_DILUTION_CORRECTED_CONC, Plasma_AB40_FNIHQuanterix]
+      - [AB1_42_DILUTION_CORRECTED_CONC, Plasma_AB42_FNIHQuanterix]
+    PLASMA_ABETA_PROJECT_SHIMADZU:
+      lab: Shimadzu
+      kit: IP-MS
+      markers:
+      - [AB1_40, Plasma_AB40_Shimadzu]
+      - [AB1_42, Plasma_AB42_Shimadzu]
+      - [APP_669_711, Plasma_APP669711_Shimadzu]
+      - [COMPOSITE_BIOMARKER, Plasma_Composite_Shimadzu]
+    PLASMA_ABETA_PROJECT_U_OF_GOTHENBURG:
+      lab: Univ. Gothenburg
+      kit: IP-MS
+      markers:
+      - [AB_1_40, Plasma_AB40_UGOT]
+      - [AB_1_42, Plasma_AB42_UGOT]
+    PLASMA_ABETA_PROJECT_WASH_U:
+      lab: Washington Univ. (Bateman lab)
+      kit: IP-LC-MS/MS
+      markers:
+      - [STANDARDIZED_PLASMAAB40, Plasma_AB40_WashU]
+      - [STANDARDIZED_PLASMAAB42, Plasma_AB42_WashU]
+      - [STANDARDIZED_PLASMAAB4240, Plasma_AB42_40_WashU]
+    PLASMA_ABETA_PROJECT_ROCHE:
+      long: true
+      test_col: ASSAY
+      value_col: RESULT
+      name_tpl: Plasma_{test}_FNIHRoche
+      lab: Roche Diagnostics
+      kit: Roche Elecsys
+    BATEMANLAB_ADNI_Plasma_Abeta4240:
+      lab: Washington Univ. (Bateman lab)
+      kit: IP-LC-MS/MS
+      markers:
+      - [Abeta_40_conc, Plasma_AB40_Bateman]
+      - [Abeta_42_conc, Plasma_AB42_Bateman]
+      - [Abeta_4240, Plasma_AB42_40_Bateman]
+    FUJIREBIOABETAPLASMA:
+      long: true
+      test_col: ANALYTE
+      value_col: CONCENTRATION
+      name_tpl: Plasma_{test}_FujirebioFeas
+      lab: Fujirebio
+      kit: Fujirebio Lumipulse G
+    FNIHBC_BLOOD_BIOMARKER_TRAJECTORIES:
+      long: true
+      test_col: PLASMA_BIOMARKER
+      value_col: TESTVALUE
+      name_tpl: Plasma_{test}_FNIHBC
+      method: ASSAYPLATFORM
+    UPENNPLASMA:
+      lab: UPenn ADNI Biomarker Core
+      kit: INNO-BIA plasma Abeta forms (Luminex xMAP)
+      markers:
+      - [AB40, Plasma_AB40_UPENNADNI1]
+      - [AB42, Plasma_AB42_UPENNADNI1]
+    PLASMAABETA:
+      lab: Araclon Biotech
+      kit: ABtest40/ABtest42 ELISA
+      markers:
+      - [TP40, Plasma_AB40total_Araclon]
+      - [TP42, Plasma_AB42total_Araclon]
+      - [FP40, Plasma_AB40free_Araclon]
+      - [FP42, Plasma_AB42free_Araclon]
+    SELKOELAB_NT1TAU:
+      lab: Selkoe lab (Brigham and Women's)
+      kit: Simoa NT1-tau
+      markers:
+      - [Dilution_Corrected_Value, Plasma_NT1tau_Selkoe]
+  lab_specs:
+    LABDATA:
+      lab: ADNI central clinical laboratory
+      markers:
+      - [RCT11, Lab_Glucose]
+      - [RCT20, Lab_Cholesterol]
+      - [RCT19, Lab_Triglycerides]
+      - [RCT392, Lab_Creatinine]
+      - [RCT6, Lab_UreaNitrogen]
+      - [RCT8, Lab_UricAcid]
+      - [RCT12, Lab_TotalProtein]
+      - [RCT13, Lab_Albumin]
+      - [RCT5, Lab_AST]
+      - [RCT4, Lab_ALT]
+      - [RCT3, Lab_GGT]
+      - [RCT1, Lab_TotalBilirubin]
+      - [RCT1407, Lab_AlkPhosphatase]
+      - [RCT183, Lab_Calcium]
+      - [AXT117, Lab_TSH]
+      - [BAT126, Lab_VitaminB12]
+      - [HMT40, Lab_Hemoglobin]
+      - [HMT2, Lab_Hematocrit]
+      - [HMT3, Lab_RBC]
+      - [HMT7, Lab_WBC]
+      - [HMT13, Lab_Platelets]
+      - [HMT4, Lab_MCV]
+    PETMETA:
+      lab: ADNI PET site (blood glucose before FDG injection)
+      markers:
+      - [PMBLGLUC, Lab_Glucose_preFDG]
+    ADNINIGHTINGALE2:
+      lab: Nightingale Health
+      kit: NMR metabolomics (mmol/L)
+      markers:
+      - [GLUCOSE, Lab_Glucose_NMR]
+    ADNINIGHTINGALE:
+      lab: Nightingale Health
+      kit: NMR metabolomics v1 (mmol/L)
+      markers:
+      - [GLC, Lab_Glucose_NMRv1]
+  medhist_tables: [MEDHIST, RECMHIST, INITHEALTH, RECCMEDS]
+  csf_main_lab: UPenn ADNI Biomarker Core
+  csf_main_kit: Roche Elecsys (cobas e601)
+  csf_extra_specs:
+    UPENNBIOMK_MASTER:
+      lab: UPenn ADNI Biomarker Core
+      kit: INNO-BIA AlzBio3 (Luminex xMAP)
+      markers:
+      - [ABETA, CSF_AB42_AlzBio3]
+      - [TAU, CSF_tTau_AlzBio3]
+      - [PTAU, CSF_pTau181_AlzBio3]
+    FUJIREBIOABETA:
+      lab: Fujirebio
+      kit: Fujirebio Lumipulse G
+      markers:
+      - [ABETA40, CSF_AB40_Lumipulse]
+      - [ABETA42, CSF_AB42_Lumipulse]
+      - [ABETA42_40, CSF_AB42_40_Lumipulse]
+    EUROIMMUN:
+      lab: EUROIMMUN
+      kit: EUROIMMUN beta-amyloid ELISA
+      markers:
+      - [BETA_AMYLOID_1_40, CSF_AB40_Euroimmun]
+      - [BETA_AMYLOID_1_42, CSF_AB42_Euroimmun]
+      - [BETA_AMYLOID_42_40, CSF_AB42_40_Euroimmun]
+    MESOSCALE:
+      lab: Meso Scale Diagnostics
+      kit: MSD immunoassay
+      markers:
+      - [ABETA38, CSF_AB38_MSD]
+      - [ABETA40, CSF_AB40_MSD]
+      - [ABETA42, CSF_AB42_MSD]
+      - [TAU, CSF_tTau_MSD]
+    BLENNOWCSFNFL:
+      lab: Univ. Gothenburg (Blennow lab)
+      kit: NF-light ELISA
+      markers:
+      - [CSFNFL, CSF_NfL_Blennow]
+    BLENNOWCSFNG:
+      lab: Univ. Gothenburg (Blennow lab)
+      kit: in-house neurogranin ELISA
+      markers:
+      - [CSFNG, CSF_Ng_Blennow]
+    BLENNOW_LAB_CSF_GAP_43:
+      lab: Univ. Gothenburg (Blennow lab)
+      kit: in-house GAP-43 ELISA
+      markers:
+      - [GAP_43, CSF_GAP43_Blennow]
+    LOCLAB:
+      lab: Site local laboratory
+      markers:
+      - [GLUCOSE, CSF_Glucose_LocalLab]
+      - [PROTEIN, CSF_Protein_LocalLab]
+      - [CTRED, CSF_RBC_LocalLab]
+      - [CTWHITE, CSF_WBC_LocalLab]

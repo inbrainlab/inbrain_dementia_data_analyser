@@ -1,0 +1,83 @@
+# =============================================================================
+# COLUMN-NAME HARMONISATION (applied by integration.merge, per dataset)
+# =============================================================================
+# global_rename  exact 1:1 renames applied to every dataset
+# column_rename  exact renames per dataset (applied before family_rename)
+# family_rename  rename a whole measure family per dataset: every column
+#                whose name contains the stem as a '_'-delimited token, e.g.
+#                ADNI T1w -> MRI_T1w renames all_T1w_date, T1w_IDs, nb_total_T1w...
+#                A stem that already carries the canonical prefix is left alone.
+# age_priority   first available column becomes age_at_baseline
+# =============================================================================
+global_rename:
+  education_years: education
+  retirement_status: retired
+column_rename:
+  AIBL:
+    all_AXT117_values: all_Lab_TSH_AIBL_score
+    all_AXT117_date: all_Lab_TSH_AIBL_date
+    nb_of_AXT117_values: nb_of_Lab_TSH_AIBL_visits
+    all_BAT126_values: all_Lab_VitaminB12_AIBL_score
+    all_BAT126_date: all_Lab_VitaminB12_AIBL_date
+    nb_of_BAT126_values: nb_of_Lab_VitaminB12_AIBL_visits
+    all_HMT3_values: all_Lab_RBC_AIBL_score
+    all_HMT3_date: all_Lab_RBC_AIBL_date
+    nb_of_HMT3_values: nb_of_Lab_RBC_AIBL_visits
+    all_HMT7_values: all_Lab_WBC_AIBL_score
+    all_HMT7_date: all_Lab_WBC_AIBL_date
+    nb_of_HMT7_values: nb_of_Lab_WBC_AIBL_visits
+    all_HMT13_values: all_Lab_Platelets_AIBL_score
+    all_HMT13_date: all_Lab_Platelets_AIBL_date
+    nb_of_HMT13_values: nb_of_Lab_Platelets_AIBL_visits
+    all_HMT40_values: all_Lab_Hemoglobin_AIBL_score
+    all_HMT40_date: all_Lab_Hemoglobin_AIBL_date
+    nb_of_HMT40_values: nb_of_Lab_Hemoglobin_AIBL_visits
+    all_HMT100_values: all_Lab_MCH_AIBL_score
+    all_HMT100_date: all_Lab_MCH_AIBL_date
+    nb_of_HMT100_values: nb_of_Lab_MCH_AIBL_visits
+    all_HMT102_values: all_Lab_MCHC_AIBL_score
+    all_HMT102_date: all_Lab_MCHC_AIBL_date
+    nb_of_HMT102_values: nb_of_Lab_MCHC_AIBL_visits
+    all_RCT6_values: all_Lab_UreaNitrogen_AIBL_score
+    all_RCT6_date: all_Lab_UreaNitrogen_AIBL_date
+    nb_of_RCT6_values: nb_of_Lab_UreaNitrogen_AIBL_visits
+    all_RCT11_values: all_Lab_Glucose_AIBL_score
+    all_RCT11_date: all_Lab_Glucose_AIBL_date
+    nb_of_RCT11_values: nb_of_Lab_Glucose_AIBL_visits
+    all_RCT20_values: all_Lab_Cholesterol_AIBL_score
+    all_RCT20_date: all_Lab_Cholesterol_AIBL_date
+    nb_of_RCT20_values: nb_of_Lab_Cholesterol_AIBL_visits
+    all_RCT392_values: all_Lab_Creatinine_AIBL_score
+    all_RCT392_date: all_Lab_Creatinine_AIBL_date
+    nb_of_RCT392_values: nb_of_Lab_Creatinine_AIBL_visits
+  PREVENTAD:
+    ethnicity: race
+family_rename:
+  ADNI:
+    T1w: MRI_T1w
+    T2w: MRI_T2w
+    T2star: MRI_T2star
+    fMRI: MRI_fMRI
+    ASL: MRI_ASL
+    DWI: MRI_DTI
+    Metabolism: PET_FDG
+    ABETA42_values: ABETA42_score
+    PTAU_values: PTAU_score
+    ABETA40_values: ABETA40_score
+    TAU_values: TAU_score
+  AIBL:
+    T1w_3T: MRI_T1w
+    T2w: MRI_T2w
+  MCSA:
+    PET_PIB: ABETA_PIB
+  4RTNI:
+    BNT_total: BNT
+  PREVENTAD:
+    DigSym_RBANS: DigSym
+    VF_anim_RBANS: VF_anim
+  NIFD:
+    PET_PIB: ABETA_PIB
+  OASIS:
+    Craft_II: Craft_D
+    Metabolism: PET_FDG
+age_priority: [age_at_baseline, age_at_screen, age_at_consent, entry_age, age_at_1st_visit, age_at_entry]
