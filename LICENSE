@@ -1,12 +1,21 @@
-Copyright (c) 2026 InBrain lab, University of Sao Paulo. All rights reserved.
+MIT License
 
-A licence has not been chosen yet. Choose one (for example MIT or BSD-3-Clause
-for the code) before the repository is made public or the paper is submitted,
-and replace this file.
+Copyright (c) 2026 InBrain Lab, University of São Paulo
 
-This repository contains code and configuration only. The datasets it reads
-(ADNI, A4/LEARN, ABVIB, AIBL, MCSA, NACC, NIFD, OASIS-3, PREVENT-AD, 4RTNI) are
-distributed by their owners under data use agreements and are NOT part of this
-repository. Each user must obtain them from the original portals and follow
-the corresponding agreements, including their acknowledgement and publication
-policies.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
