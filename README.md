@@ -411,5 +411,4 @@ examples/               quickstart notebook
 
 See `CITATION.cff`. Publications must also cite and acknowledge each dataset
 as required by its data use agreement (ADNI, AIBL, NACC, OASIS-3, A4,
-PREVENT-AD, MCSA, NIFD, 4RTNI, ABVIB). The licence of the code is still to be
-chosen (see `LICENSE`).
+PREVENT-AD, MCSA, NIFD, 4RTNI, ABVIB).
