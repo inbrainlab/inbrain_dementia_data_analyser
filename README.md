@@ -47,7 +47,7 @@ writes the same files (checked on the 2026-11-16 data snapshot; see
 Python 3.10 or newer.
 
 ```bash
-git clone https://github.com/<your-org>/inbrain_dementia_data_analyser.git
+git clone https://github.com/vini-rodrigues-2003/inbrain_dementia_data_analyser.git
 cd inbrain_dementia_data_analyser
 pip install -e .            # editable: uses the configs/ folder of this clone
 pip install -e ".[test]"    # optional, to run the tests: pytest
@@ -59,7 +59,7 @@ pip install -e ".[test]"    # optional, to run the tests: pytest
 from google.colab import drive
 drive.mount("/content/drive")
 
-!git clone -q https://github.com/<your-org>/inbrain_dementia_data_analyser.git /content/inbrain_dementia_data_analyser
+!git clone -q https://github.com/vini-rodrigues-2003/inbrain_dementia_data_analyser.git /content/inbrain_dementia_data_analyser
 !pip install -q /content/inbrain_dementia_data_analyser    # dependencies + package + default configs
 
 import inbrain_dementia_data_analyser as ida
