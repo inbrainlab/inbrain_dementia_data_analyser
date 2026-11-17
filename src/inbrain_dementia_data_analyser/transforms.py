@@ -40,12 +40,25 @@ def _present(df: pd.DataFrame, cols) -> list[str]:
 
 
 def _numeric(df: pd.DataFrame, cols, src=None) -> pd.DataFrame:
-    """Items as numbers; codes in ``params.item_missing_values`` (e.g. 9 =
-    "don't know") become missing before the items are combined."""
+    """Items as numbers, cleaned before they are combined:
+
+    * ``params.item_missing_values``: item codes that mean missing (e.g. 9 =
+      "don't know");
+    * ``params.item_valid_range``: ``[min, max]`` (null = open end); item
+      values outside it become missing (e.g. NACC codes 88 / 95-98).
+    """
     num = df[cols].apply(pd.to_numeric, errors="coerce")
-    miss = (src.params.get("item_missing_values") if src is not None else None) or ()
+    params = src.params if src is not None else {}
+    miss = params.get("item_missing_values") or ()
     if miss:
         num = num.mask(num.isin(list(miss)))
+    rng = params.get("item_valid_range")
+    if rng:
+        lo, hi = rng
+        if lo is not None:
+            num = num.mask(num < lo)
+        if hi is not None:
+            num = num.mask(num > hi)
     return num
 
 

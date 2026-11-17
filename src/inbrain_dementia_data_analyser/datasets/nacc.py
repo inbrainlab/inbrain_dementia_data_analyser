@@ -64,7 +64,7 @@ NPS VARIABLES (from main file):
   raw form scores; raw scores (BOSTON, ANIMALS, LOGIMEM, MEMUNITS, DIGIF,
   DIGIB, WAIS) used where NACC-derived are absent.
   TMT: TRAILA/OTRAILA and TRAILB/OTRAILB (v2/v3 variants) → combined.
-  RAVLT: REY1REC (Trial 1) + REYTCOR (Delayed Recall).
+  RAVLT: REY1REC-REY5REC (trials 1-5), REYDREC (delayed recall), REYTCOR (recognition).
   All NPS: negative values → NaN.
 
 MRI: investigator_scan_mriqc_nacc70.csv
@@ -220,7 +220,8 @@ NPS_NUMERIC_COLS = [
     "TRAILB", "OTRAILB",
     "LOGIMEM", "MEMUNITS", "MEMTIME",
     "DIGIF", "DIGIB", "WAIS",
-    "REY1REC", "REYTCOR",
+    "REY1REC", "REY2REC", "REY3REC", "REY4REC", "REY5REC",
+    "REYDREC", "REYTCOR",
     "CRAFTVRS", "CRAFTDVR",
     "CRAFTURS", "CRAFTDRE",
 ]

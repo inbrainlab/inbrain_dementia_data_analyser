@@ -2,7 +2,7 @@
 
 Generated from `configs/variables.yaml` by `tools/make_variable_docs.py`; do not edit by hand.
 
-206 variables. *expand* = placed into time windows in the expanded master.
+207 variables. *expand* = placed into time windows in the expanded master.
 
 | Variable | Label | Domain | Expand | Sources |
 |---|---|---|---|---|
@@ -10,8 +10,9 @@ Generated from `configs/variables.yaml` by `tools/make_variable_docs.py`; do not
 | `TMT_B` | Trail Making Test part B, time (s) | executive_attention | yes | **ABVIB** npsych: `TRAILB`<br>**ADNI** neurobat: `TRABSCOR`<br>**NACC** main: coalesce(`TRAILB`, `OTRAILB`)<br>**OASIS** neuro: `tmb`<br>**PREVENTAD** tmt: `TMT_B_time`<br>**4RTNI** data: `UDSTRAILS_<tp>_TRAILB` |
 | `BNT` | Boston Naming Test, total correct | language | yes | **ABVIB** npsych: `BOSTON`<br>**ADNI** neurobat: `BNTTOTAL`<br>**NACC** main: `BOSTON`<br>**NIFD** clinical: `BNTCORR` (date `CLINICAL_LINKDATE`)<br>**OASIS** neuro: `bnt` |
 | `MINT` | Multilingual Naming Test, total | language |  | **ADNI** neurobat: `MINTTOTAL`<br>**NACC** main: `MINTTOTS`<br>**OASIS** neuro: `mintscnc` |
-| `RAVLT_I` | RAVLT immediate recall (ADNI AVTOT1 and NACC REY1REC: trial 1; PREVENT-AD: sum of trials 1-5) | memory |  | **ADNI** neurobat: `AVTOT1`<br>**NACC** main: `REY1REC`<br>**PREVENTAD** ravlt: `List_A_Sum_Trials_1_5` |
-| `RAVLT_D` | Rey Auditory Verbal Learning Test, delayed recall | memory |  | **ADNI** neurobat: `AVDELTOT`<br>**NACC** main: `REYTCOR`<br>**PREVENTAD** ravlt: `ListA_Delayed_Recall_Correct_Answer` |
+| `RAVLT_T1` | RAVLT trial 1 (words recalled, 0-15) | memory |  | **ADNI** neurobat: `AVTOT1`<br>**NACC** main: `REY1REC`<br>**PREVENTAD** ravlt: `ListA_Recall1_Correct_Answers` |
+| `RAVLT_I` | RAVLT immediate recall, total of trials 1-5 (0-75) | memory |  | **ADNI** neurobat: sum(`AVTOT1`, `AVTOT2`, `AVTOT3`, `AVTOT4`, ...)<br>**NACC** main: sum(`REY1REC`, `REY2REC`, `REY3REC`, `REY4REC`, ...)<br>**PREVENTAD** ravlt: `List_A_Sum_Trials_1_5` |
+| `RAVLT_D` | RAVLT delayed recall after ~30 min (words recalled, 0-15) | memory |  | **ADNI** neurobat: `AVDEL30MIN`<br>**NACC** main: `REYDREC`<br>**PREVENTAD** ravlt: `ListA_Delayed_Recall_Correct_Answer` |
 | `LM_I` | Logical Memory, immediate recall | memory | yes | **A4** coglogic: `LIMMTOTAL`<br>**ABVIB** npsych: `LOGIMEM`<br>**ADNI** neurobat: `LIMMTOTAL`<br>**AIBL** neurobat: `LIMMTOTAL`<br>**NACC** main: `LOGIMEM`<br>**OASIS** neuro: `LOGIMEM` |
 | `LM_II` | Logical Memory, delayed recall | memory | yes | **A4** coglogic: `LDELTOTAL`<br>**ABVIB** npsych: `MEMUNITS`<br>**ADNI** neurobat: `LDELTOTAL`<br>**AIBL** neurobat: `LDELTOTAL`<br>**NACC** main: `MEMUNITS`<br>**OASIS** neuro: `MEMUNITS` |
 | `Clock_Command` | Clock drawing to command | visuospatial |  | **ADNI** neurobat: `CLOCKSCOR` |
@@ -22,7 +23,7 @@ Generated from `configs/variables.yaml` by `tools/make_variable_docs.py`; do not
 | `VF_anim` | Category fluency, animals | language | yes | **ABVIB** npsych: `ANIMALS`<br>**ADNI** neurobat: `CATANIMSC`<br>**NACC** main: `ANIMALS`<br>**NIFD** clinical: `ANCORR` (date `CLINICAL_LINKDATE`)<br>**OASIS** neuro: `ANIMALS`<br>**4RTNI** data: `VERBFLU_AN_<tp>_ANCORR` |
 | `VF_veg` | Category fluency, vegetables | language |  | **ABVIB** npsych: `VEG`<br>**ADNI** neurobat: `CATVEGESC`<br>**OASIS** neuro: `VEG` |
 | `MMSE` | Mini-Mental State Examination, total | global_cognition | yes | **A4** mmse: `MMSCORE`<br>**ABVIB** npsych: `MMSE`<br>**ADNI** mmse: `MMSCORE`<br>**AIBL** mmse: `MMSCORE`<br>**MCSA** data: `MMSEcalc`<br>**NACC** main: `NACCMMSE`<br>**NIFD** clinical: `MMSE_TOT` (date `MMSE_DCDATE`)<br>**OASIS** cdr: `MMSE`<br>**4RTNI** data: `MMSE_<tp>_MMSETOT` |
-| `MoCA` | Montreal Cognitive Assessment, total | global_cognition | yes | **ADNI** moca: `MOCA`<br>**NACC** main: `NACCMOCA`<br>**NIFD** clinical: `MODREY` (date `MOCA_DCDate`)<br>**OASIS** neuro: `mocatots`<br>**PREVENTAD** el_cdr_moca: `MOCA_total_score`<br>**4RTNI** data: `MOCA_<tp>_MOCATOTWITHEDUC` |
+| `MoCA` | Montreal Cognitive Assessment, total | global_cognition | yes | **ADNI** moca: `MOCA`<br>**NACC** main: `NACCMOCA`<br>**NIFD** clinical: `MOCA_TotWithEduc` (date `MOCA_DCDATE`)<br>**OASIS** neuro: `mocatots`<br>**PREVENTAD** el_cdr_moca: `MOCA_total_score`<br>**4RTNI** data: `MOCA_<tp>_MOCATOTWITHEDUC` |
 | `DS_Fwd_MoCA` |  | attention |  | **ADNI** moca: `DIGFOR` |
 | `DS_Back_MoCA` |  | attention |  | **ADNI** moca: `DIGBACK` |
 | `CDR` | Clinical Dementia Rating, global | global_staging | yes | **A4** cdr: `CDGLOBAL`<br>**ABVIB** cdr: `CDRGLOB`<br>**ADNI** cdr: `CDGLOBAL`<br>**AIBL** cdr: `CDGLOBAL`<br>**MCSA** data: `CDRGLOB`<br>**NACC** main: `CDRGLOB`<br>**NIFD** clinical: `CDR_TOT` (date `CDR_DCDATE`)<br>**OASIS** cdr: `CDRTOT`<br>**PREVENTAD** el_cdr_moca: `CDR_total_score`<br>**4RTNI** data: `CDR_<tp>_CDRTOT` |
@@ -124,8 +125,8 @@ Generated from `configs/variables.yaml` by `tools/make_variable_docs.py`; do not
 | `UPDRS_Imputed` |  | motor |  | **4RTNI** data: `UPDRS_<tp>_IMPUTED` |
 | `CVLT_cued` |  | memory |  | **4RTNI** data: `CVLT_<tp>_CUEDCOR` |
 | `CVLT_long` |  | memory |  | **4RTNI** data: `CVLT_<tp>_CORRLONG` |
-| `Benson_copy` |  | memory |  | **4RTNI** data: `BENSON_<tp>_MODREY` |
-| `Benson_10m` |  | memory |  | **4RTNI** data: `BENSON_<tp>_REY10M` |
+| `Benson_copy` | Benson complex figure, copy (modified Rey, 0-17) | visuospatial |  | **NIFD** clinical: `MODREY` (date `CLINICAL_LINKDATE`)<br>**4RTNI** data: `BENSON_<tp>_MODREY` |
+| `Benson_10m` | Benson complex figure, 10-minute delayed recall (0-17) | memory |  | **NIFD** clinical: `REY10M` (date `CLINICAL_LINKDATE`)<br>**4RTNI** data: `BENSON_<tp>_REY10M` |
 | `Benson_recog` |  | memory |  | **4RTNI** data: `BENSON_<tp>_REYRECG` |
 | `BNT_total` |  | language |  | **4RTNI** data: `BNT_<tp>_BNTTOT` |
 | `BNT_corr` |  | language |  | **4RTNI** data: `BNT_<tp>_BNTCORR` |
@@ -159,7 +160,7 @@ Generated from `configs/variables.yaml` by `tools/make_variable_docs.py`; do not
 | `MoCA_DelayedRecall` |  | global_cognition |  | **PREVENTAD** el_cdr_moca: `delayed_recall_score` |
 | `MoCA_Orientation` |  | global_cognition |  | **PREVENTAD** el_cdr_moca: `orientation_score` |
 | `CDR_FU` |  | global_staging |  | **PREVENTAD** cdr_fu: `CDR_total_score` |
-| `RAVLT_Recog` |  | memory |  | **PREVENTAD** ravlt: `List_A_Recognition_Recognized` |
+| `RAVLT_Recog` | RAVLT delayed recognition (ADNI AVDELTOT / NACC REYTCOR; PREVENT-AD words recognised) | memory |  | **ADNI** neurobat: `AVDELTOT`<br>**NACC** main: `REYTCOR`<br>**PREVENTAD** ravlt: `List_A_Recognition_Recognized` |
 | `RBANS_total` |  | global_cognition |  | **PREVENTAD** rbans: `total_scale_index_score` |
 | `RBANS_ImmMem` |  | global_cognition |  | **PREVENTAD** rbans: `immediate_memory_index_score` |
 | `RBANS_DelMem` |  | global_cognition |  | **PREVENTAD** rbans: `delayed_memory_index_score` |

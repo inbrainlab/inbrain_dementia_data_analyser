@@ -21,6 +21,7 @@ entry and what is wrong. `inbrain-dementia check-config` runs only that check.
 | `ida` | | `{enabled: bool, required: bool}` - LONI IDA search export |
 | `tables` | yes | raw tables, see below |
 | `settings` | | dataset-specific settings read by the pipeline |
+| `raw_missing_values` | | codes that mean "missing" in every raw column read through `variables.yaml` (plain columns and transform items), masked before transforms and cleaning; in use: ADNI and AIBL `[-1, -4]`, NIFD `-1 ... -9`, OASIS `88.8, 99.9, 888, 888.8, 999, 999.9, 8888, 9999` |
 
 Table entries:
 
@@ -48,21 +49,36 @@ Settings in use:
 
 See the header of the file and section 5 of the README. Entry keys: `label`,
 `domain`, `kind` (`score`, `categorical`, `flag`), `unit`, `expand`,
-`builtin`, `description`, `sources`. Source keys: `table`, `column`,
-`date_column`, `transform`, `items`, `params`, `missing_values`,
+`builtin`, `description`, `valid_range`, `sources`. Source keys: `table`,
+`column`, `date_column`, `transform`, `items`, `params`, `missing_values`,
 `valid_range`, `range_inclusive`, `valid_codes`, `row_filter`,
-`case_insensitive`, `instrument`, `suffix`, `date_suffix`, `note`.
+`case_insensitive`, `instrument`, `suffix`, `date_suffix`,
+`raw_missing_values` (`false` = ignore the dataset codes), `note`.
 
-Order of the cleaning rules: `valid_codes`, then `missing_values`, then
-`valid_range`. Cleaning and transforms never modify the raw column; the
-result goes to a helper column `__var__<name>`.
+A `valid_range` at the variable level holds the bounds of the instrument (for
+example MMSE `[0, 30]`, TMT `[0, 900]`) and applies to every source that does
+not give its own; `valid_range: null` in a source turns it off.
+
+Order of the steps:
+
+1. `params.item_recode` (`{old: new}`) on the raw input columns (NIFD NPI:
+   `-6` = logical skip, symptom absent -> `0`);
+2. the dataset's `raw_missing_values` on the raw input columns (plain column or
+   transform items; never on a transform result, so a difference may still be
+   negative);
+3. the transform (`params.item_missing_values` / `params.item_valid_range`
+   clean the items first);
+4. `valid_codes`, then `missing_values`, then `valid_range` on the result.
+
+Cleaning and transforms never modify the raw table; the result goes to a
+helper column `__var__<name>`. 4RTNI wide-table variables apply step 4 only.
 
 How each pipeline dates a series (not configurable per variable unless noted):
 
 | Dataset | Date of a series |
 |---|---|
 | ADNI | `EXAMDATE`, else `VISDATE`; `date_column` overrides |
-| A4 | registry `EXAMDAY` of the visit (days since consent) |
+| A4 | registry `EXAMDAY` of the visit (days since consent); a visit with no registry day keeps a missing time (`NA` in the lists) |
 | ABVIB | UDS forms `VISITYR/VISITMO/VISITDAY`; `table_date_columns` for COGSCOR, LABORATORY, SUBCAT; `date_column` overrides |
 | AIBL | `EXAMDATE` |
 | MCSA | `VisitDate`; `date_column` overrides (imaging metrics: `ImagingDate`) |
@@ -79,15 +95,16 @@ Transforms (`transforms.py`; add your own with `@register("name")`):
 | `sum` | row sum of `items`; `params.min_count` answered items (default 1) |
 | `mean` | row mean of `items`; `params.min_count` |
 | `max` | row maximum (e.g. any of several 0/1 medication flags) |
-
-`sum`, `mean` and `max` accept `params.item_missing_values`: item codes set to
-missing before the items are combined (ECog: `[9]` = "don't know").
 | `coalesce` | first non-missing of `items` in order |
 | `difference` | `items[0] - items[1]` |
 | `ratio` | `items[0] / items[1]` |
 | `bmi` | from `params.weight`, `params.height` and fixed units (`weight_unit`, `height_unit`) or unit-code columns (`weight_unit_column`, `height_unit_column`: 1 = lb/in, 2 = kg/cm); implausible BMI (<10, >80) -> missing |
 | `bmi_reported_or_computed` | `params.bmi_column` when 10-80, else `bmi` |
 | `sum_timepoint_items` | 4RTNI only: sum of `<instrument>_<tp>_<item>` per timepoint |
+
+`sum`, `mean` and `max` accept `params.item_missing_values` (item codes set to
+missing before the items are combined; ECog: `[9]` = "don't know") and
+`params.item_valid_range` (`[min, max]`; NACC RAVLT trials: `[0, 15]`).
 
 ## `harmonization.yaml`
 
