@@ -12,6 +12,9 @@ Typical use::
     preprocess_dataset("ADNI", root)
     paths = integrate(root)
     cohort = create_longitudinal_cohort(paths["expanded"], modality_label="MRI_T1w")
+
+    from inbrain_dementia_data_analyser.figures import make_cohort_figures
+    make_cohort_figures(cohort, "figures", expanded=paths["expanded"])   # needs matplotlib
 """
 from ._version import __version__
 from .cohorts import (

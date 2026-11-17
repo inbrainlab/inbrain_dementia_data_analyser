@@ -1,0 +1,23 @@
+# Each modality taken from its own cohort file (one anchor cohort per measure,
+# all anchored on the same T1w scan): presence = subject listed in that file.
+# Paths are relative to the folder you run the command from.
+#   inbrain-dementia figures MRI_T1w_thesis_summary.csv <root> --spec configs/figures/thesis_modality_files.yaml
+modalities:
+  T1w: {measure: MRI_T1w}
+  CDR: {measure: CDR, file: CDR_thesis_summary.csv}
+  MMSE: {measure: MMSE, file: MMSE_thesis_summary.csv}
+  MoCA: {measure: MoCA, file: MoCA_thesis_summary.csv}
+  p-tau: {measure: CSF_PTAU, file: PTAU_thesis_summary.csv}
+  Aβ42: {measure: CSF_AB42, file: ABETA_thesis_summary.csv}
+reference: T1w
+bundles: {p-tau + Aβ42: [p-tau, Aβ42]}
+composites:                     # the ten composite cohorts of the thesis figure
+  - [CDR]
+  - [p-tau + Aβ42]
+  - [CDR, MMSE]
+  - [CDR, MoCA]
+  - [CDR, p-tau + Aβ42]
+  - [CDR, MMSE, MoCA]
+  - [CDR, MMSE, p-tau + Aβ42]
+  - [CDR, MoCA, p-tau + Aβ42]
+  - [CDR, MMSE, MoCA, p-tau + Aβ42]

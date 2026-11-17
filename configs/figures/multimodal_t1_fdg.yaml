@@ -1,0 +1,15 @@
+# Figures for the cohort of configs/cohorts/multimodal_t1_fdg.yaml
+#   inbrain-dementia figures <out>/multimodal_T1_FDG_multimodal.csv <root> --spec configs/figures/multimodal_t1_fdg.yaml
+# Keys not given here keep the values of configs/figures.yaml.
+modalities:
+  T1w: {measure: MRI_T1w}            # found as match_MRI_T1w_date in the cohort table
+  FDG: {measure: PET_FDG}
+  fMRI: {measure: MRI_fMRI}
+  Amyloid PET: {measure: PET_ABETA}
+  Tau PET: {measure: PET_TAU}
+  CDR: {measure: CDR, source: ever}  # not a column of this cohort: any CDR in the expanded master
+reference: T1w
+bundles: {}
+venn: [Amyloid PET, Tau PET]
+longitudinal:
+  availability: [T1w, FDG, Amyloid PET, Tau PET, CDR]

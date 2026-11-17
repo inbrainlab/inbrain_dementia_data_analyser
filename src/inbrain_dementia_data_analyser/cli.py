@@ -140,6 +140,26 @@ def cmd_cohort(args) -> int:
     return 0
 
 
+def cmd_figures(args) -> int:
+    from .figures import make_cohort_figures
+    from .integration import integrated_paths
+
+    cfg = _cfg(args)
+    expanded = args.expanded
+    if expanded is None and args.root:
+        expanded = integrated_paths(args.root, cfg)["expanded"]
+    out_dir = args.out_dir or str(Path(args.cohort).with_suffix("")) + "_figures"
+    figs = args.figures[0] if len(args.figures) == 1 else args.figures
+    rep = make_cohort_figures(args.cohort, out_dir, expanded=expanded, spec=args.spec, figures=figs,
+                              dx_column=args.dx_column, config=cfg)
+    print(f"{len(rep.files)} figures in {rep.out_dir}")
+    for k, paths in rep.files.items():
+        print(f"  {k:<36} {paths[0].name}")
+    for k, why in rep.skipped.items():
+        print(f"  [not drawn] {k}: {why}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="inbrain-dementia", description=__doc__.split("\n")[0])
     p.add_argument("--config-dir", default=None, help="configuration folder (default: repository configs/)")
@@ -179,6 +199,17 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--input", default=None, help="expanded master CSV (overrides root)")
     s.add_argument("--out-dir", default=None)
     s.set_defaults(func=cmd_cohort)
+
+    s = sub.add_parser("figures", help="draw the figures of a cohort (configs/figures.yaml)")
+    s.add_argument("cohort", help="cohort table written by a cohort tool (CSV)")
+    s.add_argument("root", nargs="?", default=None, help="root folder (to locate the expanded master)")
+    s.add_argument("--expanded", default=None, help="expanded master CSV (overrides root)")
+    s.add_argument("--spec", default=None, help="YAML overriding configs/figures.yaml")
+    s.add_argument("--out-dir", default=None, help="default: <cohort>_figures next to the cohort file")
+    s.add_argument("--figures", nargs="*", default=["all"],
+                   help="all | cross_sectional | longitudinal | figure names")
+    s.add_argument("--dx-column", default=None, help="diagnosis column (default diag_at_anchor / 1st_diag)")
+    s.set_defaults(func=cmd_figures)
     return p
 
 

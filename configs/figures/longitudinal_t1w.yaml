@@ -1,0 +1,16 @@
+# Figures for the cohort of configs/cohorts/longitudinal_t1w.yaml
+#   inbrain-dementia figures <out>/longitudinal_T1w_longitudinal.csv <root> --spec configs/figures/longitudinal_t1w.yaml
+# The cohort table has one row per subject with the matched MRI visits
+# (MRI_T1w_V1_0m_date ...); the other measures are looked up in the expanded
+# master (source: ever = any time, baseline = first window).
+modalities:
+  T1w: {measure: MRI_T1w}
+  CDR: {measure: CDR, source: baseline}
+  MMSE: {measure: MMSE, source: baseline}
+  MoCA: {measure: MoCA, source: baseline}
+  p-tau: {measure: CSF_PTAU, source: ever}
+  Aβ42: {measure: CSF_AB42, source: ever}
+reference: T1w
+longitudinal:
+  window_months: 12
+  max_months: 72

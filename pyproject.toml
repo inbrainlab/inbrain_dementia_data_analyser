@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inbrain_dementia_data_analyser"
-version = "0.2.0"
+version = "0.3.0"
 description = "Harmonisation of ten public dementia and ageing cohorts and creation of multimodal study cohorts (InBrain lab, University of Sao Paulo)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -19,7 +19,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7"]
+test = ["pytest>=7", "matplotlib>=3.6"]
+figures = ["matplotlib>=3.6"]
 
 [project.scripts]
 inbrain-dementia = "inbrain_dementia_data_analyser.cli:main"
@@ -38,3 +39,4 @@ addopts = "-q"
 "share/inbrain_dementia_data_analyser/configs" = ["configs/*.yaml"]
 "share/inbrain_dementia_data_analyser/configs/datasets" = ["configs/datasets/*.yaml"]
 "share/inbrain_dementia_data_analyser/configs/cohorts" = ["configs/cohorts/*.yaml"]
+"share/inbrain_dementia_data_analyser/configs/figures" = ["configs/figures/*.yaml"]

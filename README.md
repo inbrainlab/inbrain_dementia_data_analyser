@@ -27,6 +27,8 @@ raw tables (Tables_<DATASET>/)                                  configs/*.yaml
  create_multimodal_cohort()           2, 3, 4 ... modalities within a window
  create_longitudinal_cohort()         one modality at 0 / 12 / 24 ... months
  create_longitudinal_multimodal_cohort()  a schedule where every visit has a full set
+        ▼
+ make_cohort_figures()  ──►  14 figures + source tables describing the cohort
 ```
 
 The package is a refactor of the lab notebooks
@@ -50,6 +52,7 @@ Python 3.10 or newer.
 git clone https://github.com/inbrainlab/inbrain_dementia_data_analyser.git
 cd inbrain_dementia_data_analyser
 pip install -e .            # editable: uses the configs/ folder of this clone
+pip install -e ".[figures]" # optional, matplotlib for the cohort figures
 pip install -e ".[test]"    # optional, to run the tests: pytest
 ```
 
@@ -141,6 +144,8 @@ inbrain-dementia validate   $ROOT
 inbrain-dementia preprocess $ROOT --datasets ADNI AIBL
 inbrain-dementia integrate  $ROOT
 inbrain-dementia cohort configs/cohorts/longitudinal_t1w.yaml $ROOT
+inbrain-dementia figures <out>/longitudinal_T1w_longitudinal.csv $ROOT \
+                 --spec configs/figures/longitudinal_t1w.yaml
 ```
 
 [examples/quickstart.ipynb](examples/quickstart.ipynb) walks through the
@@ -241,6 +246,33 @@ tool. Output: one row per subject x matched visit. (This definition is new in
 the package; see the report.)
 
 Ready-made YAML specs for the command line are in `configs/cohorts/`.
+
+### 4.5 Figures of a cohort
+
+Fourteen figures describe any cohort written by the tools above
+(cross-sectional or longitudinal): which modalities the subjects have and how
+they overlap, the sample left by each combination of modalities, the
+diagnostic mix (overall, per databank, per modality), conversions, the
+diagnostic trajectory in time windows (Sankey) and how many subjects still
+have each measure over follow-up.
+
+```python
+from inbrain_dementia_data_analyser.figures import make_cohort_figures
+
+spec = {"modalities": {"Amyloid PET": "PET_ABETA", "p-tau217": "PLASMA_PTAU217",
+                       "CDR": "CDR", "T1w": "MRI_T1w"},
+        "reference": "Amyloid PET", "bundles": {}, "venn": ["p-tau217", "T1w"]}
+rep = make_cohort_figures(res, "figures/amyloid_ptau217",   # CohortResult, DataFrame or CSV
+                          expanded=paths["expanded"],       # for the longitudinal figures
+                          spec=spec)                        # optional; or a YAML file
+rep.files, rep.skipped        # PNGs written / figures that could not be drawn (and why)
+```
+
+Defaults (modalities, reference, diagnostic groups and colours, time windows)
+are in `configs/figures.yaml`; a spec overrides any of them. Each run writes
+the images, `figure_source_tables.xlsx` (the numbers behind every figure) and
+`FIGURES.md` (what each figure shows and where each modality was found).
+See [docs/figures.md](docs/figures.md).
 
 ## 5. Adding or changing a variable
 
@@ -410,9 +442,10 @@ src/inbrain_dementia_data_analyser/
   datasets/             one pipeline per dataset (adni.py ... rtni4.py) + base.py
   integration/          merge.py, expand.py, common.py
   cohorts/              anchor.py, multimodal.py, longitudinal.py, longitudinal_multimodal.py
+  figures/              cohort figures: data.py, cross_sectional.py, longitudinal.py, report.py
 tests/                  pytest, synthetic data only
 tools/                  compare_outputs.py (regression), make_docs.py
-docs/                   datasets, variables, output schema, configuration, refactor report
+docs/                   datasets, variables, output schema, configuration, figures, refactor report
 examples/               quickstart notebook
 ```
 

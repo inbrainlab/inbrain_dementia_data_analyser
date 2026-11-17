@@ -106,6 +106,18 @@ Transforms (`transforms.py`; add your own with `@register("name")`):
 missing before the items are combined; ECog: `[9]` = "don't know") and
 `params.item_valid_range` (`[min, max]`; NACC RAVLT trials: `[0, 15]`).
 
+## `figures.yaml`
+
+Defaults of the cohort figures (`inbrain_dementia_data_analyser.figures`):
+`diagnosis_groups` (order, colours, label -> group, compound group, stage
+rank for the direction of a conversion), `modalities` (label -> `measure`,
+`column`, `file`, `source`), `reference`, `bundles`, `composites`, `venn`,
+`longitudinal` (`window_months`, `max_months`, `availability`,
+`sankey_min_flow`, `upset_min_n`) and `style` (`dpi`, `formats`, `font`). A
+figure spec (`configs/figures/*.yaml` or a dict) overrides any key; the
+`modalities`, `bundles`, `venn`, `composites` and colour / label maps are
+replaced as a whole. Details: [figures.md](figures.md).
+
 ## `harmonization.yaml`
 
 `global_rename` (all datasets), `column_rename` (per dataset, exact names),

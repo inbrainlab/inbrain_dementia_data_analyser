@@ -1,0 +1,100 @@
+# =============================================================================
+# FIGURES (inbrain_dementia_data_analyser.figures / `inbrain-dementia figures`)
+# =============================================================================
+# Defaults of the cohort figures. A figure spec (see configs/figures/*.yaml)
+# overrides any key below; keys that are not given keep these values.
+#
+# diagnosis_groups
+#   order          groups, in the order of every legend and axis
+#   colors         one colour per group (hex)
+#   labels         canonical diagnosis label (configs/diagnosis.yaml) -> group
+#   compound_group group of every other compound label ('AD+VaD'); null = drop
+#   stage_rank     rank used to name a conversion: higher = progression,
+#                  lower = reversion, same rank = change of aetiology;
+#                  groups not listed get default_rank
+#   light_text     groups whose bars carry white text
+#   Labels not covered (Unknown, Dementia-NOS, OtherDx, PD, MSA, EPY, ...) are
+#   left out of the figures; their number is printed in each figure note.
+#
+# modalities       label -> how to find it. Keys:
+#   measure        stem or group of the expanded master (MRI_T1w, CDR,
+#                  CSF_PTAU, PET_ABETA, PLASMA_PTAU217, ...)
+#   column         column of the cohort table that holds the modality
+#                  (presence = non-missing). Found automatically when omitted:
+#                  <measure>, <measure>_date, <measure>_loniID,
+#                  match_<measure>_date, <measure>_V<k>_..._date
+#   file           CSV of another cohort (presence = subject listed there)
+#   source         cohort (default) | ever | baseline: when the cohort table
+#                  has no column for it, look the modality up in the expanded
+#                  master (any acquisition / first window only)
+# reference        modality every subject of the cohort has (the anchor);
+#                  percentages are "% of <reference>". null = all subjects
+# bundles          modalities that are added together in the composite
+#                  cohorts (label -> list of modality labels)
+# composites       auto (every combination when there are <= 4 steps; with more,
+#                  each column adds every remaining step to the largest
+#                  composite of the previous column) or a list of lists of
+#                  step labels
+# venn             two modality labels compared in the Venn figures
+# longitudinal
+#   window_months  width of the time bins (months since the first diagnosis)
+#   max_months     last bin shown
+#   availability   modality labels shown in followup_availability_area_by_dx
+#   sankey_min_flow  flows with fewer subjects are not drawn
+#   upset_min_n    transitions with fewer subjects are not drawn
+# style            dpi, formats (png, pdf, svg), font
+# =============================================================================
+diagnosis_groups:
+  order: [CN, MCI, AD, LBD, FTD / tauopathy, VaD, Mixed]
+  colors:
+    CN: "#2a78d6"
+    MCI: "#eb6834"
+    AD: "#1baf7a"
+    LBD: "#eda100"
+    FTD / tauopathy: "#e87ba4"
+    VaD: "#008300"
+    Mixed: "#6250d6"
+  labels:
+    CN: CN
+    CON: CN
+    MCI: MCI
+    AD: AD
+    VaD: VaD
+    LBD: LBD
+    LBD+PD: LBD
+    bvFTD: FTD / tauopathy
+    FTD: FTD / tauopathy
+    svPPA: FTD / tauopathy
+    nfvPPA: FTD / tauopathy
+    PSP: FTD / tauopathy
+    CBS: FTD / tauopathy
+    FTD+PSP: FTD / tauopathy
+  compound_group: Mixed
+  stage_rank: {CN: 0, MCI: 1}
+  default_rank: 2
+  light_text: [CN, MCI, AD, VaD, Mixed]
+
+modalities:
+  T1w: {measure: MRI_T1w}
+  CDR: {measure: CDR}
+  MMSE: {measure: MMSE}
+  MoCA: {measure: MoCA}
+  p-tau: {measure: CSF_PTAU}
+  Aβ42: {measure: CSF_AB42}
+reference: T1w
+bundles:
+  p-tau + Aβ42: [p-tau, Aβ42]
+composites: auto
+venn: [MMSE, MoCA]
+
+longitudinal:
+  window_months: 6
+  max_months: 60
+  availability: [T1w, CDR, MMSE, MoCA, p-tau]
+  sankey_min_flow: 3
+  upset_min_n: 5
+
+style:
+  dpi: 300
+  formats: [png]
+  font: DejaVu Sans
