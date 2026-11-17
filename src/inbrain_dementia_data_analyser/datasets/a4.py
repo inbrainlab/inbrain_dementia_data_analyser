@@ -173,10 +173,6 @@ A4_PLASMA_FILE_RX = re.compile("plasma", re.I)
 
 
 
-# VISCODE → approximate month offset for ordering when EXAMDAY is missing
-VISCODE_ORDER = {
-    "scv1": 0, "scv2": 1, "scv3": 2, "scv4": 20, "scv5": 38,
-}
 
 # ADLPQ item columns (14 items, scored 0-3 each, max 42)
 
@@ -246,8 +242,13 @@ def normalise_id(df: pd.DataFrame) -> pd.DataFrame:
 def attach_examday(df: pd.DataFrame,
                    registry: pd.DataFrame) -> pd.DataFrame:
     """
-    Ensure df has an _examday column for sorting.
-    Priority: EXAMDAY column → join from registry → VISCODE_ORDER approximation.
+    Add ``_examday`` (days since consent) to ``df``.
+
+    Priority: the table's own ``EXAMDAY`` column, otherwise the registry
+    ``EXAMDAY`` of the same ``PTID`` + ``VISCODE``. A visit without a known day
+    keeps ``_examday = NaN``; no day is imputed. (Up to v0.1.0 unmatched visits
+    received a placeholder of 99 x 30 = 2970 days, then 0 — see
+    docs/REFACTOR_REPORT.md, "Bug fixes".)
     """
     df = normalise_id(df)
 
@@ -270,15 +271,19 @@ def attach_examday(df: pd.DataFrame,
 
     if "EXAMDAY" not in df.columns:
         df["EXAMDAY"] = np.nan
-
-    if "VISCODE" in df.columns:
-        vc_order = df["VISCODE"].map(VISCODE_ORDER).fillna(99)
-        df["_examday"] = df["EXAMDAY"].fillna(vc_order * 30)
-    else:
-        df["_examday"] = df["EXAMDAY"].fillna(0)
-
-    df["_examday"] = pd.to_numeric(df["_examday"], errors="coerce").fillna(0)
+    df["_examday"] = pd.to_numeric(df["EXAMDAY"], errors="coerce")
     return df
+
+
+def _na_list(values) -> str | float:
+    """Pipe-joined values with ``NA`` for a missing one, so parallel lists (days, SUVR, centiloid) stay aligned token by token."""
+    toks = ["NA" if pd.isna(v) else str(v) for v in values]
+    return "|".join(toks) if toks else np.nan
+
+
+def _day_token_col(df: pd.DataFrame) -> pd.Series:
+    """``_examday`` as the token written in the day lists (``NA`` when unknown)."""
+    return df["_examday"].map(lambda v: "NA" if pd.isna(v) else v)
 
 
 
@@ -309,25 +314,27 @@ def build_diagnosis(registry: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     reg = normalise_id(registry.copy())
-    reg["_examday"] = pd.to_numeric(reg.get("EXAMDAY", 0),
-                                     errors="coerce").fillna(0)
+    # Registry rows with VISTYPE 0 ("Not Done") are visits that did not take
+    # place; they carry no EXAMDAY and are not counted as visits (the
+    # participant keeps the static CU label).
+    if "VISTYPE" in reg.columns:
+        reg["_done"] = pd.to_numeric(reg["VISTYPE"], errors="coerce") != 0
+    else:
+        reg["_done"] = True
+    reg["_examday"] = pd.to_numeric(reg.get("EXAMDAY", np.nan), errors="coerce")
     reg = reg.sort_values(["PTID", "_examday"])
 
     records = []
     for ptid, grp in reg.groupby("PTID"):
-        baseline = grp[grp.get("VISCODE", pd.Series()).eq("scv3")] \
-                   if "VISCODE" in grp.columns else pd.DataFrame()
-        baseline_day = (baseline["_examday"].iloc[0]
-                        if not baseline.empty
-                        else grp["_examday"].min())
+        grp = grp[grp["_done"]]
         records.append({
             "ID"                         : ptid,
             "1st_diag"                   : "CU",
             "Lst_diag"                   : "CU",
-            "1st_diag_date"              : baseline_day,
+            "1st_diag_date"              : grp["_examday"].min(),
             "Lst_diag_date"              : grp["_examday"].max(),
             "all_diag"                   : "CU",
-            "all_diag_date"              : list_str(grp["_examday"].tolist()),
+            "all_diag_date"              : _na_list(grp["_examday"].tolist()),
             "nb_of_visits"               : len(grp),
             "1st_time_of_change"         : np.nan,
             "1st_time_of_change_days_to" : np.nan,
@@ -409,7 +416,7 @@ def build_mri(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
             days = grp["_examday"].tolist()
             ids  = [f"{ptid}_vmri_v{row.get('VISCODE','?')}"
                     for _, row in grp.iterrows()]
-            r["all_MRI_T1w_visit"]  = list_str(days)
+            r["all_MRI_T1w_visit"]  = _na_list(days)
             r["nb_total_MRI_T1w"]   = len(days)
             r["MRI_T1w_IDs"]        = list_str(ids)
             r["1st_MRI_T1w_visit"]  = days[0]  if days else np.nan
@@ -432,7 +439,7 @@ def build_mri(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
             il = r.pop(id_key,  [])
             dl = r.pop(day_key, [])
             if il:
-                r[f"all_{mtype}_visit"] = list_str(dl)
+                r[f"all_{mtype}_visit"] = _na_list(dl)
                 r[f"nb_total_{mtype}"]  = len(il)
                 r[f"{mtype}_IDs"]       = list_str(il)
                 r[f"1st_{mtype}_ID"]    = il[0]
@@ -454,14 +461,15 @@ def build_mri(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
     sc = []
     for df_, T in ((dwi, "MRI_DTI"), (fmri, "MRI_fMRI")):
         if not df_.empty and "Manufacturer" in df_.columns:
-            sc.append(df_.assign(_T=T)[["PTID", "VISCODE", "_examday", "_T", "Manufacturer"]])
+            sc.append(df_.assign(_T=T, _examday=_day_token_col(df_))
+                         [["PTID", "VISCODE", "_examday", "_T", "Manufacturer"]])
     if sc:
         sc = pd.concat(sc, ignore_index=True)
         if not vmri.empty and "VISCODE" in vmri.columns:
             vm = sc.dropna(subset=["Manufacturer"]).assign(
                 VISCODE=lambda x: x["VISCODE"].astype(str).str.lower()) \
                 .groupby(["PTID", "VISCODE"])["Manufacturer"].first()
-            t1 = vmri[["PTID", "VISCODE", "_examday"]].copy()
+            t1 = vmri[["PTID", "VISCODE"]].assign(_examday=_day_token_col(vmri))
             t1["VISCODE"] = t1["VISCODE"].astype(str).str.lower()
             t1["Manufacturer"] = [vm.get((p, v), np.nan) for p, v in zip(t1["PTID"], t1["VISCODE"])]
             t1["_T"] = "MRI_T1w"
@@ -527,7 +535,7 @@ def build_pet(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
                               if "centiloid" in c.lower()), None)
 
         for (ptid, vc, ligand), grp in pet.groupby(
-                ["PTID", "_examday", "_ligand"]):
+                ["PTID", "_examday", "_ligand"], dropna=False):
             r = records.setdefault(ptid, {
                 "ID": ptid, "PET_tracer_disponible": set()
             })
@@ -572,12 +580,12 @@ def build_pet(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
                 days = r.pop(days_k)
                 suvr = r.pop(suvr_k, [])
                 cl   = r.pop(cl_k, [])
-                r[f"all_{ligand}_visit"]     = list_str(days)
+                r[f"all_{ligand}_visit"]     = _na_list(days)
                 r[f"nb_total_{ligand}"]      = len(days)
                 r[f"1st_{ligand}_visit"]     = days[0]  if days else np.nan
                 r[f"Lst_{ligand}_visit"]     = days[-1] if days else np.nan
-                r[f"all_{ligand}_suvr"]      = list_str(suvr)
-                r[f"all_{ligand}_centiloid"] = list_str(cl)
+                r[f"all_{ligand}_suvr"]      = _na_list(suvr)
+                r[f"all_{ligand}_centiloid"] = _na_list(cl)
 
     if not records:
         return pd.DataFrame()
@@ -609,9 +617,6 @@ def build_pet(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
 
 
 
-_LEGACY_DOUBLE_ATTACH = {"ADLPQ", "PACC"}
-
-
 def build_all_clinical(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
     """Clinical / NPS / functional / vitals / habits series.
 
@@ -628,14 +633,6 @@ def build_all_clinical(dfs: dict, registry: pd.DataFrame) -> pd.DataFrame:
         frame, col = materialise(df, name, src)
         if col is None:
             continue
-        if name in _LEGACY_DOUBLE_ATTACH:
-            # The notebook attached EXAMDAY to these tables before calling
-            # _nps_from_df, which attaches it again. On the second pass the
-            # EXAMDAY column already exists, so visits whose VISCODE has no
-            # registry day keep a missing time instead of the 99 x 30 = 2970-day
-            # placeholder used for every other measure. Kept to reproduce the
-            # notebook output; see the report (A4 placeholder days).
-            frame = attach_examday(normalise_id(frame.copy()), registry)
         part = _nps_from_df(frame, registry, name, col)
         if not part.empty:
             parts.append(part)

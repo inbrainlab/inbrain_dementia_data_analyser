@@ -6,6 +6,9 @@ Date: 2026-11-16. Source: `multicohort_explorator_plasma_v3_manufacturer.ipynb`
 
 ## 1. Regression comparison: ran, outputs identical
 
+(v0.1.0. Version 0.2.0 changes outputs on purpose to fix data bugs of the
+notebooks; the changes are listed in section 7.)
+
 The package was run on the lab's data snapshot of 2026-11-16 and every output
 was compared value by value with the output of the notebooks on the same input
 (same rows by key, same column set, same values; numbers compared to 1e-9).
@@ -91,14 +94,13 @@ folder, run the package, then `python tools/compare_outputs.py <root> <folder>`
    rules for variables, `create_cross_sectional_cohort`,
    `create_longitudinal_multimodal_cohort`, a CLI.
 
-## 4. Suspected bugs kept (behaviour of the notebooks reproduced)
+## 4. Suspected bugs of the notebooks
 
-| Where | What | One-line fix if the lab agrees |
+Fixed in v0.2.0 (2026-11-17); see section 7. Only one item is left:
+
+| Where | What | Note |
 |---|---|---|
-| NIFD `MoCA` | Source column `MODREY`, which the NIFD/4RTNI batteries use for the modified Rey figure copy (4RTNI maps it to `Benson_copy`). | point `MoCA -> NIFD` to the NIFD MoCA total column, or remove it |
-| A4 times | Visits whose VISCODE has no registry day get 99 x 30 = 2970 days for every measure, except ADLPQ and PACC, which get a missing time (the notebook attached EXAMDAY twice to those two tables). | treat unknown VISCODEs as missing in `attach_examday` (`datasets/a4.py`) and drop `_LEGACY_DOUBLE_ATTACH` |
-| `RAVLT_I` | ADNI `AVTOT1` and NACC `REY1REC` are trial 1; PREVENT-AD `List_A_Sum_Trials_1_5` is the sum of trials 1-5. Pooled under one name. | split into `RAVLT_T1` and `RAVLT_T1_5` in `variables.yaml` |
-| NACC vitals | Negative-code cleaning applies only to the columns listed in `NPS_NUMERIC_COLS` (`datasets/nacc.py`); a new NACC variable needs `valid_range` / `missing_values` in its entry. | - (documented) |
+| `BNT` | ABVIB and OASIS `BOSTON` holds the 60-item form at some visits (values up to 60) next to the 30-item form. | split by form if the lab pools BNT across cohorts |
 
 ## 5. Decisions for the lab
 
@@ -142,3 +144,79 @@ folder, run the package, then `python tools/compare_outputs.py <root> <folder>`
 * **Memory.** Wide files are read in row chunks; the NACC main file only with
   the columns used by the configured variables; the expanded master is written
   in blocks.
+
+## 7. Bug fixes in v0.2.0 (outputs differ from the notebooks on purpose)
+
+Each fix was checked by re-running the dataset and comparing every cell with
+the v0.1.0 output (= notebook output): only the cells listed below changed.
+Counts are subjects (rows) with at least one changed value.
+
+### 7.1 Missing-value codes counted as scores
+
+The notebooks kept the "not done / missing" codes of several exports as
+scores. New configuration: `raw_missing_values` per dataset (masked in the raw
+columns before anything else) and `valid_range` per variable (the bounds of
+the instrument, inherited by every source); see `docs/configuration.md`.
+
+| Dataset | Codes removed | Subjects changed (main variables) |
+|---|---|---|
+| NIFD | `-1 ... -9` in 25 measures | MMSE 37, CDR 10, CVLT 119-135, GDS-15 124, BIS/BAS 113/147, UHDRS 136, ... |
+| NIFD `NPI` | severity `-6` (logical skip: symptom absent) was summed as -6, giving totals down to -72 | 268 (now 0-33); `-6` -> 0, `-9` -> missing, all 12 items required |
+| ADNI | `-1`, `-4` | TMT-B 118, CDR 114, Height 1,755, Weight 142, ECog-SP 203, others 14-55 |
+| AIBL | `-4` | LM I/II 16/23, MMSE 3, CDR 6 |
+| ABVIB | UDS codes 88 / 95-98 / 995-998 | TMT-B 7, LM I 5, BNT, DigSym, VF veg 2 each, MMSE, GDS, DS back 1 each |
+| OASIS | 88.8 / 99.9 / 888 / 999 / 9999 in vitals | Height 44, Weight 39, Pulse 21, BP 16/10 |
+| NACC (30,000-row sample) | 88 / 95-98 / 995-998 in scores | TMT-B 3,023, TMT-A 1,946, DigSym 1,179, VF 1,087, GDS 1,034, BNT 915, LM 900-926, MINT 793, DS 745-767, MoCA 566, MMSE 353 |
+| 4RTNI | TMT-B 995 | 1 |
+
+Unchanged: MCSA, PREVENT-AD, A4 (no codes in the mapped columns; their
+negative values are real z-scores, centiloids or composites).
+
+### 7.2 NIFD `MoCA` was the Benson figure copy
+
+The source was `MODREY` (modified Rey/Benson figure copy, 0-17). Now
+`MOCA_TotWithEduc` dated by `MOCA_DCDATE` (the old entry pointed to a date
+column that does not exist, `MOCA_DCDate`, so it fell back to the visit date).
+`MODREY` and `REY10M` now feed `Benson_copy` and `Benson_10m`, as in 4RTNI.
+Changed: MoCA for 328 NIFD subjects; 14 new Benson columns.
+
+### 7.3 RAVLT measures pooled under one name
+
+| Variable | ADNI | NACC | PREVENT-AD |
+|---|---|---|---|
+| `RAVLT_T1` (new): trial 1 | `AVTOT1` | `REY1REC` | `ListA_Recall1_Correct_Answers` |
+| `RAVLT_I`: sum of trials 1-5 (0-75) | sum `AVTOT1..5` | sum `REY1REC..REY5REC` | `List_A_Sum_Trials_1_5` |
+| `RAVLT_D`: delayed recall (0-15) | `AVDEL30MIN` (was `AVDELTOT`, the recognition score) | `REYDREC` (was `REYTCOR`, recognition) | `ListA_Delayed_Recall_Correct_Answer` |
+| `RAVLT_Recog`: recognition | `AVDELTOT` (new) | `REYTCOR` (new) | `List_A_Recognition_Recognized` |
+
+The trial sums need all five trials (`min_count: 5`). Recognition is scored
+differently in each cohort; compare it within a cohort only.
+
+### 7.4 A4 placeholder days
+
+The notebook's `VISCODE_ORDER` used the labels `scv1 ... scv5`, but the files
+code visits as `1 ... 5`, so every visit without a registry day got
+99 x 30 = 2970 days (339 cells; ADLPQ and PACC got a missing time because the
+notebook attached the day twice). Now:
+
+* a visit without a registry day keeps a missing time, written `NA` in the
+  `all_*` lists so the lists stay aligned (PET SUVR / centiloid lists too);
+* `_LEGACY_DOUBLE_ATTACH` and `VISCODE_ORDER` are removed;
+* diagnosis: registry rows with `VISTYPE = 0` ("Not Done") are not visits any
+  more (they had `EXAMDAY` = 0 imputed): `nb_of_visits` changed for 937
+  subjects, `all_diag_date` for 944, `1st_diag_date` for 29 (no visit day 0
+  any more when visit 1 was not done). Every participant keeps the static CU
+  label.
+
+Changed: 33 subjects' amyloid PET visit day (2970 -> `NA`), 1-7 subjects'
+dates in each clinical series. MRI lists come from the IDA export and did not
+change. The DWI / fMRI parameter tables of 552 / 511 LEARN subjects have no
+registry day (their visit 4 is not in the public registry); if the IDA export
+does not cover them, their day is `NA`.
+
+### 7.5 Not re-run
+
+The full NACC file and the integration / cohort steps (they only read the
+per-dataset tables). Expected effect on the master: the columns above, and
+A4 subjects whose only registry visits were not done have no first-diagnosis
+day (4 subjects).

@@ -12,6 +12,9 @@
 #   label, domain, unit, description   documentation (shown in docs/variables.md)
 #   kind      score (default) | categorical | flag
 #   expand    true -> placed into 6-month windows in MASTER_expanded_240m.csv
+#   valid_range  [min, max] of the instrument, inherited by every source that
+#             gives no valid_range of its own (valid_range: null in a source
+#             turns it off); keeps codes such as 88 / 95-98 / 995-998 out
 #   builtin   true -> produced by dataset code; sources are not read from here
 #   sources   one block per dataset (or a list of blocks)
 #
@@ -25,7 +28,11 @@
 #                  sum_timepoint_items); see transforms.py to add your own
 #   items          input columns of the transform
 #   params         extra transform parameters (sum / mean / max:
-#                  item_missing_values: [9] drops item codes before combining)
+#                  item_missing_values: [9] drops item codes before combining,
+#                  item_valid_range: [0, 15] drops items outside the range;
+#                  any source: item_recode: {-6: 0} recodes raw values first)
+#   raw_missing_values  false -> ignore the dataset-wide raw_missing_values
+#                  of datasets/<name>.yaml for this source
 #   missing_values codes that mean "missing" (e.g. [-4, 88, 99])
 #   valid_range    [min, max] (null = open end); values outside -> missing
 #   range_inclusive  false -> the bounds themselves are excluded
@@ -53,6 +60,7 @@ variables:
     label: Trail Making Test part A, time (s)
     domain: executive_attention
     expand: true
+    valid_range: [0, 900]
     sources:
       ADNI: {table: neurobat, column: TRAASCOR}
       ABVIB: {table: npsych, column: TRAILA}
@@ -67,6 +75,7 @@ variables:
     label: Trail Making Test part B, time (s)
     domain: executive_attention
     expand: true
+    valid_range: [0, 900]
     sources:
       ADNI: {table: neurobat, column: TRABSCOR}
       ABVIB: {table: npsych, column: TRAILB}
@@ -81,6 +90,7 @@ variables:
     label: Boston Naming Test, total correct
     domain: language
     expand: true
+    valid_range: [0, 60]
     sources:
       ADNI: {table: neurobat, column: BNTTOTAL}
       NIFD: {column: BNTCORR, date_column: CLINICAL_LINKDATE}
@@ -90,28 +100,49 @@ variables:
   MINT:
     label: Multilingual Naming Test, total
     domain: language
+    valid_range: [0, 32]
     sources:
       ADNI: {table: neurobat, column: MINTTOTAL}
       OASIS: {table: neuro, column: mintscnc}
       NACC: {column: MINTTOTS}
-  RAVLT_I:
-    label: 'RAVLT immediate recall (ADNI AVTOT1 and NACC REY1REC: trial 1; PREVENT-AD: sum of trials 1-5)'
+  RAVLT_T1:
+    label: RAVLT trial 1 (words recalled, 0-15)
     domain: memory
+    valid_range: [0, 15]
     sources:
       ADNI: {table: neurobat, column: AVTOT1}
-      PREVENTAD: {table: ravlt, column: List_A_Sum_Trials_1_5}
+      PREVENTAD: {table: ravlt, column: ListA_Recall1_Correct_Answers}
       NACC: {column: REY1REC}
-  RAVLT_D:
-    label: Rey Auditory Verbal Learning Test, delayed recall
+  RAVLT_I:
+    label: RAVLT immediate recall, total of trials 1-5 (0-75)
     domain: memory
+    valid_range: [0, 75]
     sources:
-      ADNI: {table: neurobat, column: AVDELTOT}
+      ADNI:
+        table: neurobat
+        transform: sum
+        items: [AVTOT1, AVTOT2, AVTOT3, AVTOT4, AVTOT5]
+        params: {min_count: 5}
+        note: computed from the five trials (all required)
+      PREVENTAD: {table: ravlt, column: List_A_Sum_Trials_1_5}
+      NACC:
+        transform: sum
+        items: [REY1REC, REY2REC, REY3REC, REY4REC, REY5REC]
+        params: {min_count: 5, item_valid_range: [0, 15]}
+        note: computed from the five trials (all required); item codes 88 / 95-98 / -4 dropped
+  RAVLT_D:
+    label: RAVLT delayed recall after ~30 min (words recalled, 0-15)
+    domain: memory
+    valid_range: [0, 15]
+    sources:
+      ADNI: {table: neurobat, column: AVDEL30MIN}
       PREVENTAD: {table: ravlt, column: ListA_Delayed_Recall_Correct_Answer}
-      NACC: {column: REYTCOR}
+      NACC: {column: REYDREC}
   LM_I:
     label: Logical Memory, immediate recall
     domain: memory
     expand: true
+    valid_range: [0, 25]
     sources:
       ADNI: {table: neurobat, column: LIMMTOTAL}
       AIBL: {table: neurobat, column: LIMMTOTAL}
@@ -123,6 +154,7 @@ variables:
     label: Logical Memory, delayed recall
     domain: memory
     expand: true
+    valid_range: [0, 25]
     sources:
       ADNI: {table: neurobat, column: LDELTOTAL}
       AIBL: {table: neurobat, column: LDELTOTAL}
@@ -143,6 +175,7 @@ variables:
   DS_Fwd:
     label: Digit span forward
     domain: attention
+    valid_range: [0, 14]
     sources:
       ADNI: {table: neurobat, column: DSPANFOR}
       NIFD: {column: DIGITFW, date_column: CLINICAL_LINKDATE}
@@ -153,6 +186,7 @@ variables:
   DS_Back:
     label: Digit span backward
     domain: attention
+    valid_range: [0, 14]
     sources:
       ADNI: {table: neurobat, column: DSPANBAC}
       NIFD: {column: DIGITBW, date_column: CLINICAL_LINKDATE}
@@ -164,6 +198,7 @@ variables:
     label: Digit Symbol Substitution / WAIS coding
     domain: processing_speed
     expand: true
+    valid_range: [0, 93]
     sources:
       ADNI: {table: neurobat, column: DIGITSCOR}
       ABVIB: {table: npsych, column: WAIS}
@@ -175,6 +210,7 @@ variables:
     label: Category fluency, animals
     domain: language
     expand: true
+    valid_range: [0, 77]
     sources:
       ADNI: {table: neurobat, column: CATANIMSC}
       NIFD: {column: ANCORR, date_column: CLINICAL_LINKDATE}
@@ -185,6 +221,7 @@ variables:
   VF_veg:
     label: Category fluency, vegetables
     domain: language
+    valid_range: [0, 77]
     sources:
       ADNI: {table: neurobat, column: CATVEGESC}
       ABVIB: {table: npsych, column: VEG}
@@ -193,6 +230,7 @@ variables:
     label: Mini-Mental State Examination, total
     domain: global_cognition
     expand: true
+    valid_range: [0, 30]
     sources:
       ADNI: {table: mmse, column: MMSCORE}
       AIBL: {table: mmse, column: MMSCORE}
@@ -207,12 +245,10 @@ variables:
     label: Montreal Cognitive Assessment, total
     domain: global_cognition
     expand: true
+    valid_range: [0, 30]
     sources:
       ADNI: {table: moca, column: MOCA}
-      NIFD:
-        column: MODREY
-        date_column: MOCA_DCDate
-        note: 'CHECK: MODREY is the modified Rey figure copy in the NIFD dictionary, not MoCA (kept as in the notebook)'
+      NIFD: {column: MOCA_TotWithEduc, date_column: MOCA_DCDATE}
       4RTNI: {instrument: MOCA, suffix: MOCATOTWITHEDUC, date_suffix: DATE}
       PREVENTAD: {table: el_cdr_moca, column: MOCA_total_score}
       OASIS: {table: neuro, column: mocatots}
@@ -229,6 +265,7 @@ variables:
     label: Clinical Dementia Rating, global
     domain: global_staging
     expand: true
+    valid_range: [0, 3]
     sources:
       ADNI: {table: cdr, column: CDGLOBAL}
       AIBL: {table: cdr, column: CDGLOBAL}
@@ -244,6 +281,7 @@ variables:
     label: Clinical Dementia Rating, sum of boxes
     domain: global_staging
     expand: true
+    valid_range: [0, 18]
     sources:
       ADNI: {table: cdr, column: CDRSB}
       NIFD: {column: CDR_BOX_SCORE, date_column: CDR_DCDATE}
@@ -257,6 +295,7 @@ variables:
     label: Geriatric Depression Scale
     domain: mood
     expand: true
+    valid_range: [0, 15]
     sources:
       ADNI: {table: gds, column: GDTOTAL}
       ABVIB: {table: gds, column: GDS}
@@ -267,6 +306,7 @@ variables:
     label: Functional Activities Questionnaire, total
     domain: function
     expand: true
+    valid_range: [0, 30]
     sources:
       ADNI: {table: faq, column: FAQTOTAL}
       NIFD: {column: FAQ_TOTAL, date_column: FAQ_DCDATE}
@@ -276,13 +316,16 @@ variables:
     label: Neuropsychiatric Inventory (Questionnaire), total
     domain: behaviour
     expand: true
+    valid_range: [0, 36]
     sources:
       ADNI: {table: npiq, column: NPISCORE}
       NIFD:
         transform: sum
         items: [NPI_DELSEV, NPI_HALLSEV, NPI_AGITSEV, NPI_DEPDSEV, NPI_ANXSEV, NPI_ELATSEV, NPI_APASEV, NPI_DISNSEV, NPI_IRRSEV,
           NPI_MOTSEV, NPI_NITESEV, NPI_APPSEV]
+        params: {item_recode: {-6: 0}, min_count: 12}
         date_column: NPI_DCDATE
+        note: severity -6 (logical skip, symptom absent) counts as 0; the total needs all 12 items
       4RTNI:
         instrument: NPIQ
         transform: sum_timepoint_items
@@ -503,46 +546,57 @@ variables:
       NIFD: {column: MDEXAM_UHDRS, date_column: MDEXAM_DCDATE}
   LM_I_cog:
     domain: memory
+    valid_range: [0, 25]
     sources:
       ABVIB: {table: cogscor, column: LMIAI}
   VF_anim_cog:
     domain: language
+    valid_range: [0, 77]
     sources:
       ABVIB: {table: cogscor, column: CFTOTANI}
   VF_F_cog:
     domain: language
+    valid_range: [0, 77]
     sources:
       ABVIB: {table: cogscor, column: CFTOTALF}
   DigSym_cog:
     domain: attention
+    valid_range: [0, 93]
     sources:
       ABVIB: {table: cogscor, column: WAISRTOT}
   BNT_30:
     domain: language
+    valid_range: [0, 30]
     sources:
       ABVIB: {table: cogscor, column: BNTCORR30}
   BNT_60:
     domain: language
+    valid_range: [0, 60]
     sources:
       ABVIB: {table: cogscor, column: BNTCORR60}
   TMT_A_cog:
     domain: executive_attention
+    valid_range: [0, 900]
     sources:
       ABVIB: {table: cogscor, column: TRAILSA}
   TMT_B_cog:
     domain: executive_attention
+    valid_range: [0, 900]
     sources:
       ABVIB: {table: cogscor, column: TRAILSB}
   GDS_cog:
     domain: mood
+    valid_range: [0, 15]
     sources:
       ABVIB: {table: cogscor, column: GDS}
   VF_A_cog:
     domain: language
+    valid_range: [0, 77]
     sources:
       ABVIB: {table: cogscor, column: VFTOTALA}
   VF_S_cog:
     domain: language
+    valid_range: [0, 77]
     sources:
       ABVIB: {table: cogscor, column: VFTOTALS}
   Glucose:
@@ -798,13 +852,19 @@ variables:
     sources:
       4RTNI: {instrument: CVLT, suffix: CORRLONG, date_suffix: DATE}
   Benson_copy:
-    domain: memory
+    label: Benson complex figure, copy (modified Rey, 0-17)
+    domain: visuospatial
+    valid_range: [0, 17]
     sources:
       4RTNI: {instrument: BENSON, suffix: MODREY, date_suffix: DATE}
+      NIFD: {column: MODREY, date_column: CLINICAL_LINKDATE}
   Benson_10m:
+    label: Benson complex figure, 10-minute delayed recall (0-17)
     domain: memory
+    valid_range: [0, 17]
     sources:
       4RTNI: {instrument: BENSON, suffix: REY10M, date_suffix: DATE}
+      NIFD: {column: REY10M, date_column: CLINICAL_LINKDATE}
   Benson_recog:
     domain: memory
     sources:
@@ -954,9 +1014,13 @@ variables:
     sources:
       PREVENTAD: {table: cdr_fu, column: CDR_total_score}
   RAVLT_Recog:
+    label: RAVLT delayed recognition (ADNI AVDELTOT / NACC REYTCOR; PREVENT-AD words recognised)
     domain: memory
+    valid_range: [0, 15]
     sources:
+      ADNI: {table: neurobat, column: AVDELTOT}
       PREVENTAD: {table: ravlt, column: List_A_Recognition_Recognized}
+      NACC: {column: REYTCOR}
   RBANS_total:
     domain: global_cognition
     sources:

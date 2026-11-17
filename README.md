@@ -370,8 +370,8 @@ Details: [docs/configuration.md](docs/configuration.md).
   by table name anywhere under `Tables_ADNI/`. Ethnicity is not extracted.
 * **A4** - no calendar dates: time is `EXAMDAY` (days since consent). The MRI
   day of LEARN subjects is imputed as the median day of the MRI visit (63).
-  Visits whose VISCODE has no registry day get the placeholder 2970 days
-  (99 x 30), except ADLPQ and PACC (missing).
+  A visit whose VISCODE has no registry day keeps a missing time (`NA` in the
+  `all_*` lists); registry visits marked "Not Done" are not counted.
 * **AIBL** - clinical tables end in 2018; 601 subjects exist only in the IDA
   export (imaging, no diagnosis). 1.5 T T1w is a separate family `MRI_T1w_1.5T`.
 * **MCSA** - dates are shifted per subject (first visit = 1950-01-01);
@@ -379,16 +379,25 @@ Details: [docs/configuration.md](docs/configuration.md).
 * **NACC** - the main file is read three times in chunks. The full NACC run was
   not repeated during the refactor (only a 30,000-row sample, identical to the
   notebook). Some SCAN images have no date and cannot be paired in time.
-* **NIFD** - race is decoded with UDS codes (the file holds 50 / 99); the
-  `MoCA` source is the column `MODREY` as in the notebook, which the NIFD
-  dictionary describes as the modified Rey figure copy - check before use.
+* **NIFD** - race is decoded with UDS codes (the file holds 50 / 99). The
+  export writes `-1 ... -9` for missing / not done; these are removed from
+  every score (`raw_missing_values`), and NPI severity `-6` (symptom absent)
+  counts as 0.
 * **OASIS-3** - time is days since entry. The UDS A5 health-history table is
   optional. Centiloid = `Centiloid_fSUVR_rsf_TOT_CORTMEAN`.
 * **PREVENT-AD** - dates at month precision; BMI uses the eligibility height.
 * **4RTNI** - three timepoints (0, 6, 12 months); a missing date falls back to
   the month offset.
-* `RAVLT_I` mixes trial 1 (ADNI, NACC) and the sum of trials 1-5 (PREVENT-AD),
-  as in the notebooks.
+* RAVLT: `RAVLT_T1` (trial 1), `RAVLT_I` (sum of trials 1-5), `RAVLT_D`
+  (delayed recall), `RAVLT_Recog` (recognition, scored differently in each
+  cohort).
+* `BNT` holds the 30-item version in most cohorts but some ABVIB and OASIS
+  visits use the 60-item form (values up to 60); ABVIB also has `BNT_30` and
+  `BNT_60`.
+* Missing-value codes are removed with dataset-wide codes
+  (`raw_missing_values`) and instrument ranges (`valid_range`); see
+  `docs/configuration.md`. A new variable from a new source should get a
+  `valid_range`.
 
 ## 9. Repository layout
 

@@ -106,7 +106,8 @@ from ..imaging.ida import (
     ida_report_unclassified,
 )
 from ..series import build_scored_columns, d_fmt, list_str
-from ..variables import attach_generic_variables, load_generic_tables, variable_sources
+from ..variables import (attach_generic_variables, clean_values, load_generic_tables,
+                         variable_sources)
 
 import logging as _logging
 from ..logging_utils import make_print as _make_print
@@ -684,7 +685,16 @@ def build_all_clinical(df: pd.DataFrame) -> pd.DataFrame:
         if src.transform == "sum_timepoint_items":
             part = extract_tp_sum_series(df, src.instrument, src.items, src.date_suffix or "DATE", name)
         else:
-            part = extract_tp_series(df, src.instrument, src.suffix or "", src.date_suffix or "DATE", name)
+            frame = df
+            if src.missing_values or src.valid_range or src.valid_codes is not None:
+                # cleaning rules of the variable (e.g. TMT 995-998 codes)
+                cols = [c for c in (_find_col(df, src.instrument, tp, src.suffix or "")
+                                    for tp in TIMEPOINTS) if c]
+                if cols:
+                    frame = df.copy()
+                    for c in cols:
+                        frame[c] = clean_values(frame[c], src)
+            part = extract_tp_series(frame, src.instrument, src.suffix or "", src.date_suffix or "DATE", name)
         if not part.empty:
             parts.append(part)
 

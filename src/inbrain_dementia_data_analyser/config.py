@@ -33,16 +33,16 @@ SOURCE_KEYS = {
     "table", "column", "date_column", "transform", "items", "params",
     "missing_values", "valid_range", "range_inclusive", "valid_codes",
     "row_filter", "case_insensitive", "instrument", "suffix", "date_suffix",
-    "note",
+    "note", "raw_missing_values",
 }
 VARIABLE_KEYS = {
     "label", "domain", "kind", "unit", "expand", "builtin", "description",
-    "sources",
+    "sources", "valid_range",
 }
 DATASET_KEYS = {
     "name", "label", "portal", "description", "folder", "output_folder",
     "output_file", "subject_id", "time_axis", "module", "default_table",
-    "allow_copy_prefix", "ida", "tables", "settings",
+    "allow_copy_prefix", "ida", "tables", "settings", "raw_missing_values",
 }
 TABLE_KEYS = {
     "pattern", "required", "recursive", "id_columns", "date_columns",
@@ -96,6 +96,9 @@ class DatasetConfig:
     ida: dict[str, Any] = field(default_factory=dict)
     tables: dict[str, TableSpec] = field(default_factory=dict)
     settings: dict[str, Any] = field(default_factory=dict)
+    #: codes that mean "missing" in every raw column read through variables.yaml
+    #: (e.g. ADNI -1/-4, NIFD -1..-9); masked before transforms and cleaning
+    raw_missing_values: tuple[Any, ...] = ()
 
     @property
     def uses_ida(self) -> bool:
@@ -136,12 +139,16 @@ class SourceSpec:
     instrument: str | None = None
     suffix: str | None = None
     date_suffix: str | None = None
+    #: dataset-wide raw missing codes (inherited from datasets/<name>.yaml;
+    #: ``raw_missing_values: false`` in a source turns them off)
+    raw_missing_values: tuple[Any, ...] = ()
 
     @property
     def needs_preparation(self) -> bool:
         """True when the raw column cannot be used as it is."""
         return bool(self.transform or self.missing_values or self.valid_range
-                    or self.valid_codes is not None or self.row_filter)
+                    or self.valid_codes is not None or self.row_filter
+                    or self.raw_missing_values or self.params.get("item_recode"))
 
     def raw_columns(self) -> list[str]:
         """Every raw column this source may read (for header checks)."""
@@ -376,11 +383,12 @@ def _parse_dataset(path: Path) -> DatasetConfig:
         time_axis=str(raw["time_axis"]), module=str(raw["module"]), label=str(raw.get("label", "")),
         portal=str(raw.get("portal", "")), description=str(raw.get("description", "")),
         default_table=default_table, allow_copy_prefix=bool(raw.get("allow_copy_prefix", True)),
-        ida=dict(raw.get("ida") or {}), tables=tables, settings=dict(raw.get("settings") or {}))
+        ida=dict(raw.get("ida") or {}), tables=tables, settings=dict(raw.get("settings") or {}),
+        raw_missing_values=_as_tuple(raw.get("raw_missing_values")))
 
 
 def _parse_source(var: str, ds: str, raw: Any, datasets: dict[str, DatasetConfig],
-                  transforms: set[str]) -> SourceSpec:
+                  transforms: set[str], var_range: Any = None) -> SourceSpec:
     where = f"variables.yaml -> {var}.sources.{ds}"
     if isinstance(raw, str):
         raw = {"column": raw}
@@ -404,7 +412,9 @@ def _parse_source(var: str, ds: str, raw: Any, datasets: dict[str, DatasetConfig
     if not column and not transform and not raw.get("instrument"):
         raise ConfigError(f"{where}: give 'column' (or 'instrument' for wide timepoint tables) "
                           "or a 'transform'")
-    vr = raw.get("valid_range")
+    # a variable-level valid_range applies unless the source gives its own
+    # (``valid_range: null`` in a source turns it off)
+    vr = raw["valid_range"] if "valid_range" in raw else var_range
     if vr is not None:
         if not (isinstance(vr, (list, tuple)) and len(vr) == 2):
             raise ConfigError(f"{where}: valid_range must be [min, max] (use null for open ends)")
@@ -413,6 +423,14 @@ def _parse_source(var: str, ds: str, raw: Any, datasets: dict[str, DatasetConfig
     if rf is not None and not (isinstance(rf, dict) and rf.get("column") and rf.get("pattern")):
         raise ConfigError(f"{where}: row_filter needs 'column' and 'pattern' (regular expression)")
     vc = raw.get("valid_codes")
+    rmv = raw.get("raw_missing_values", True)
+    if rmv is True:
+        rmv = dcfg.raw_missing_values
+    elif rmv is False or rmv is None:
+        rmv = ()
+    rec = (raw.get("params") or {}).get("item_recode")
+    if rec is not None and not isinstance(rec, dict):
+        raise ConfigError(f"{where}: params.item_recode must be a mapping {{old: new}}")
     return SourceSpec(
         variable=var, dataset=ds, table=table, column=tuple(map(str, column)),
         date_column=raw.get("date_column"), transform=transform,
@@ -423,7 +441,7 @@ def _parse_source(var: str, ds: str, raw: Any, datasets: dict[str, DatasetConfig
         case_insensitive=bool(raw.get("case_insensitive", False)),
         instrument=raw.get("instrument"),
         suffix=None if raw.get("suffix") is None else str(raw.get("suffix")),
-        date_suffix=raw.get("date_suffix"))
+        date_suffix=raw.get("date_suffix"), raw_missing_values=_as_tuple(rmv))
 
 
 def _parse_variables(path: Path, datasets: dict[str, DatasetConfig]) -> dict[str, VariableConfig]:
@@ -445,6 +463,9 @@ def _parse_variables(path: Path, datasets: dict[str, DatasetConfig]) -> dict[str
         kind = body.get("kind", "score")
         if kind not in VARIABLE_KINDS:
             raise ConfigError(f"{where}: kind must be one of {sorted(VARIABLE_KINDS)}")
+        var_range = body.get("valid_range")
+        if var_range is not None and not (isinstance(var_range, (list, tuple)) and len(var_range) == 2):
+            raise ConfigError(f"{where}: valid_range must be [min, max] (use null for open ends)")
         sources: dict[str, tuple[SourceSpec, ...]] = {}
         for ds, sraw in (body.get("sources") or {}).items():
             try:
@@ -452,7 +473,8 @@ def _parse_variables(path: Path, datasets: dict[str, DatasetConfig]) -> dict[str
             except ConfigError as exc:
                 raise ConfigError(f"{where}.sources: {exc}") from None
             items = sraw if isinstance(sraw, list) else [sraw]
-            sources[ds_key] = tuple(_parse_source(name, ds_key, s, datasets, set(TRANSFORMS))
+            sources[ds_key] = tuple(_parse_source(name, ds_key, s, datasets, set(TRANSFORMS),
+                                                  var_range)
                                     for s in items)
         if not sources and not body.get("builtin"):
             raise ConfigError(f"{where}: no sources given (add at least one dataset, "

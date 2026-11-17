@@ -8,6 +8,9 @@ output_file: AIBL_longitudinal.csv
 subject_id: RID
 time_axis: date
 module: aibl
+# Codes that mean "missing" in every raw column read through variables.yaml
+# (AIBL uses the ADNI conventions: -1 = not done, -4 = missing).
+raw_missing_values: [-1, -4]
 ida:
   enabled: true
   required: false

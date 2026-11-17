@@ -8,6 +8,10 @@ output_file: OASIS_longitudinal.csv
 subject_id: OASISID
 time_axis: days
 module: oasis
+# Codes that mean "missing" in every raw column read through variables.yaml
+# (NACC UDS conventions used by OASIS-3 vitals: 88.8 / 99.9 / 888 / 999 /
+# 9999 = not assessed / unknown).
+raw_missing_values: [88.8, 99.9, 888, 888.8, 999, 999.9, 8888, 9999]
 tables:
   dx:
     pattern: OASIS3_UDSd1_diagnoses.csv

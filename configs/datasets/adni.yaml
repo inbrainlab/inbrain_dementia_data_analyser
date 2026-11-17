@@ -8,6 +8,9 @@ output_file: ADNI_longitudinal.csv
 subject_id: PTID
 time_axis: date
 module: adni
+# Codes that mean "missing" in every raw column read through variables.yaml
+# (ADNI data dictionary: -1 = not done / not applicable, -4 = missing).
+raw_missing_values: [-1, -4]
 tables:
   dx:
     pattern: All_Subjects_DXSUM_{date}.csv

@@ -68,6 +68,44 @@ def clean_values(values: pd.Series, src: SourceSpec) -> pd.Series:
     return out
 
 
+def prepare_inputs(frame: pd.DataFrame, src: SourceSpec) -> pd.DataFrame:
+    """Recode and mask the raw input columns of ``src`` before anything else.
+
+    * ``params.item_recode`` ({old: new}) is applied first, e.g. NIFD NPI
+      severity ``-6`` (logical skip: symptom absent) -> ``0``.
+    * The dataset-wide ``raw_missing_values`` (e.g. ADNI ``-1``/``-4``) then
+      become missing in every input column (plain column or transform items),
+      so they can never enter a score, a sum or a difference.
+
+    Returns ``frame`` itself when there is nothing to do, otherwise a copy.
+    """
+    recode = src.params.get("item_recode") or {}
+    codes = list(src.raw_missing_values)
+    if not recode and not codes:
+        return frame
+    cols = [c for c in dict.fromkeys(src.raw_columns()) if c in frame.columns]
+    if not cols and src.case_insensitive:
+        lower = {c.lower(): c for c in frame.columns}
+        cols = [lower[c.lower()] for c in src.raw_columns() if c.lower() in lower]
+    if not cols:
+        return frame
+    frame = frame.copy()
+    rec = {float(k): v for k, v in recode.items()}
+    for c in cols:
+        num = pd.to_numeric(frame[c], errors="coerce")
+        col = frame[c]
+        if rec:
+            hit = num.isin(list(rec))
+            if hit.any():                         # recoded columns become numeric
+                num = pd.Series(np.where(hit, num.map(rec).astype(float), num),
+                                index=num.index, dtype=float)
+                col = num
+        if codes:
+            col = col.mask(num.isin(codes))
+        frame[c] = col
+    return frame
+
+
 def materialise(df: pd.DataFrame, name: str, src: SourceSpec) -> tuple[pd.DataFrame | None, str | None]:
     """Return ``(frame, column)`` holding the values of variable ``name``.
 
@@ -91,6 +129,9 @@ def materialise(df: pd.DataFrame, name: str, src: SourceSpec) -> tuple[pd.DataFr
                                                           na=False, regex=True)]
         if frame.empty:
             return None, None
+    filtered = frame is not df
+    frame = prepare_inputs(frame, src)
+    owned = frame is not df and not filtered      # prepare_inputs made a copy
     if src.transform:
         values = TRANSFORMS[src.transform](frame, src)
         if values is None:
@@ -110,7 +151,8 @@ def materialise(df: pd.DataFrame, name: str, src: SourceSpec) -> tuple[pd.DataFr
     if frame is df:
         df[helper] = values
         return df, helper
-    frame = frame.copy()
+    if not owned:
+        frame = frame.copy()
     frame[helper] = values
     return frame, helper
 
