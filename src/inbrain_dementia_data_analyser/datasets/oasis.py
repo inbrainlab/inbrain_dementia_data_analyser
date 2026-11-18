@@ -79,6 +79,7 @@ import re
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import add_dx_columns, trajectory_record, uds_d1_stage_etiology
 from ..imaging.scanner import add_scanner_channels
 from ..imaging.sessions import session_id_columns
 from ..series import build_scored_columns, list_str
@@ -310,43 +311,16 @@ def build_diagnosis(df_raw: pd.DataFrame) -> pd.DataFrame:
     _print("  §1  Diagnosis trajectory (UDS D1)...")
     dx = normalise_id(df_raw.copy())
     dx = sort_days(dx)
-    dx["DX_LABEL"] = dx.apply(_classify_oasis, axis=1)
+    dx["DX_LABEL"] = dx.apply(_classify_oasis, axis=1)   # pre-0.4.0 label -> *_diag_legacy
+    dx = add_dx_columns(dx, uds_d1_stage_etiology)  # UDS D1 v1.2-v3 (upper/lower case)
     dx = dx.sort_values(["PTID", "_days"])
 
     records = []
     for ptid, grp in dx.groupby("PTID"):
-        labels  = grp["DX_LABEL"].tolist()
-        days    = grp["_days"].tolist()
-        first_day = days[0]
-
-        changes_days_abs, changes_days_delta = [], []
-        prev = labels[0]
-        for lbl, day in zip(labels[1:], days[1:]):
-            if lbl != prev:
-                changes_days_abs.append(day)
-                changes_days_delta.append(
-                    float(day - first_day) if pd.notna(day) and pd.notna(first_day)
-                    else np.nan
-                )
-                prev = lbl
-
-        records.append({
-            "ID"                         : ptid,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : days[0],
-            "Lst_diag_date"              : days[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str(days),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_days_abs[0]   if changes_days_abs   else np.nan,
-            "1st_time_of_change_days_to" : changes_days_delta[0] if changes_days_delta else np.nan,
-            "all_time_of_change"         : list_str(changes_days_abs),
-            "all_time_of_change_days_to" : list_str(changes_days_delta),
-            "Lst_time_of_change"         : changes_days_abs[-1]  if changes_days_abs   else np.nan,
-            "nb_of_change"               : len(changes_days_abs),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        days = grp["_days"].tolist()
+        records.append(trajectory_record(
+            ptid, grp, days, fmt=lambda x: x,
+            delta=lambda a, b: float(b - a) if pd.notna(a) and pd.notna(b) else np.nan))
 
     result = pd.DataFrame(records)
     return result.set_index("ID") if not result.empty else result

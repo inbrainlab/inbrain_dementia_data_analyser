@@ -48,6 +48,16 @@ expand:
   - all_diag_date
   - nb_of_visits
   - nb_of_change
+  - 1st_stage
+  - Lst_stage
+  - max_stage
+  - all_stage
+  - 1st_etiology
+  - Lst_etiology
+  - all_etiology
+  - epilepsy_any
+  - 1st_diag_legacy
+  - all_diag_legacy
   - gender
   - education
   - education_level

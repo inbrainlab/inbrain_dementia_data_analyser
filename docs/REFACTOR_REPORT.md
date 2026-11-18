@@ -220,3 +220,47 @@ The full NACC file and the integration / cohort steps (they only read the
 per-dataset tables). Expected effect on the master: the columns above, and
 A4 subjects whose only registry visits were not done have no first-diagnosis
 day (4 subjects).
+
+## 8. v0.4.0: diagnosis as stage + primary etiology
+
+Up to v0.3.0 every pipeline joined all active diagnostic flags of a visit into
+one label. In the cohorts that use the UDS Form D1 (NACC, OASIS-3, ABVIB) the
+Alzheimer flags are etiologies that clinicians mark at any level of
+impairment, so MCI due to AD became `AD` (or `AD+MCI`), impaired-not-MCI became
+`MCI`, a new etiology or an epilepsy record counted as a change of diagnosis,
+and the OASIS-3 UDS v3 fields (`alzdis`, `lbdis`, `cvd` …, lower case) were not
+read. v0.4.0 records a cognitive stage and a primary etiology per visit
+(`docs/diagnosis.md`), computes trajectories and conversions on the stage, and
+keeps the old label in `*_diag_legacy`.
+
+Audit on the full data (2026-11-18; NACC = diagnosis step only, 204,031
+visits; "old" = `all_diag_legacy`, "new" = `all_stage` / `all_etiology` of the
+same run):
+
+| Dataset | Subjects | Compound visits old → new | CN subjects whose first change was to AD, old | First change of CN subjects, new: MCI / IMPNOMCI / dementia due to AD | Subjects with MCI due to AD (new) |
+| :--- | ---: | :--- | :--- | :--- | ---: |
+| NACC | 54,631 | 7.1% → 0% | 2,633 / 4,544 (58%) | 3,094 / 1,305 / 282 of 4,804 (64% / 27% / 6%) | 9,738 |
+| OASIS-3 | 1,378 | 2.7% → 0% | 64 / 217 (29%) | 63 / 69 / 64 of 218 | 83 |
+| ABVIB | 311 | 21.8% → 0% | 6 / 18 (33%) | 14 / 4 / 0 of 18 | 32 |
+| ADNI | 5,029 | 0% → 0% | 5 / 191 (3%) | 183 / 0 / 5 of 191 | 1,688 |
+| AIBL | 1,463 | 0% → 0% | 4 / 34 (12%) | 29 / 0 / 4 of 34 | 0 (not recorded) |
+| MCSA | 6,226 | 0% → 0% | 0 / 677 | 654 / 0 / 0 of 677 | 0 (not recorded) |
+| PREVENT-AD | 348 | 0% → 0% | 0 / 102 | 102 / 0 / 0 of 102 | 0 |
+| NIFD, 4RTNI, A4 | 355 / 135 / 6,945 | 0% → 0% | static | static | 0 |
+
+Visit-level changes: NACC 20,251 visits with an AD-containing label are now
+MCI (MCI due to AD) and 5,833 `MCI` visits are now `IMPNOMCI`; OASIS-3 reads
+the UDS v3 primary etiology at 562 visits where it was missed (515 dementia,
+41 MCI, 6 IMPNOMCI), 71 AD-labelled visits are now MCI and 189 `MCI` visits
+are `IMPNOMCI`; ABVIB 53 and 13 visits respectively. ADNI, AIBL, MCSA and
+PREVENT-AD keep their stages (ADNI MCI visits now carry `DXMDUE` as etiology;
+PREVENT-AD subjective cognitive decline is CN). The 843 OASIS-3 visits
+without any D1 diagnosis stay `Unknown`, as before.
+
+Other changes: `diag_at_anchor` / `stage_at_anchor` / `etiology_at_anchor` in
+the anchor tool; `stage_<w>` / `etiology_<w>` windows and
+`conversion_to_stage` / `conversion_direction` in the expanded master; new
+label tokens `IMPNOMCI`, `Dementia-Other`, `OtherDx` in
+`configs/diagnosis.yaml`; A4 labels `CU` → `CN`; the NACC diagnosis step also
+reads the UDS D1 `…IF` columns for the fallback. Peak memory of the NACC
+diagnosis step: 1.9 GB.

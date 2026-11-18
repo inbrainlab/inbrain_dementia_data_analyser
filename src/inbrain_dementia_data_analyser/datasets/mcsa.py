@@ -58,6 +58,7 @@ import re
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import add_dx_columns, trajectory_record
 from ..imaging.ida import (
     ida_build_acquisitions,
     ida_classify,
@@ -266,43 +267,33 @@ def _classify_mcsa(val) -> str:
         return "Unknown"
 
 
+MCSA_STAGE = {0: "CN", 1: "MCI", 3: "DEM"}   # FCOGIMPR; 4 is not in the data dictionary
+
+
+def _stage_mcsa(row: pd.Series) -> tuple:
+    """(stage, etiology, epilepsy) from FCOGIMPR (0 normal, 1 MCI, 3 dementia).
+
+    MCSA records no etiology: impaired visits get "unknown" (dementia ->
+    Dementia-NOS). The undocumented code 4 is kept as Unknown.
+    """
+    v = pd.to_numeric(row.get("FCOGIMPR"), errors="coerce")
+    st = MCSA_STAGE.get(int(v), "Unknown") if pd.notna(v) else "Unknown"
+    return st, "none" if st == "CN" else "unknown", False
+
+
 def build_diagnosis(df: pd.DataFrame) -> pd.DataFrame:
     _print("  §1  Diagnosis trajectory...")
     df = normalise_columns(df)
     safe_date(df, "VisitDate")
     dx = df[["mcsa_id", "visit_num", "VisitDate", "FCOGIMPR"]].copy()
-    dx["DX_LABEL"] = dx["FCOGIMPR"].apply(_classify_mcsa)
+    dx["DX_LABEL"] = dx["FCOGIMPR"].apply(_classify_mcsa)   # pre-0.4.0 label
+    dx = add_dx_columns(dx, _stage_mcsa)
     dx = dx.sort_values(["mcsa_id", "visit_num"])
     records = []
     for subj, grp in dx.groupby("mcsa_id"):
         grp       = grp.sort_values("visit_num")
-        labels    = grp["DX_LABEL"].tolist()
         dates     = grp["VisitDate"].tolist()
-        first_date = dates[0]
-        changes_dates, changes_days = [], []
-        prev = labels[0]
-        for lbl, dt in zip(labels[1:], dates[1:]):
-            if lbl != prev:
-                changes_dates.append(dt)
-                changes_days.append(days_from(first_date, dt))
-                prev = lbl
-        records.append({
-            "ID"                         : subj,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : dates[0],
-            "Lst_diag_date"              : dates[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str([d_fmt(d) for d in dates]),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-            "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-            "all_time_of_change"         : list_str([d_fmt(d) for d in changes_dates]),
-            "all_time_of_change_days_to" : list_str(changes_days),
-            "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-            "nb_of_change"               : len(changes_dates),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        records.append(trajectory_record(subj, grp, dates))
     result = pd.DataFrame(records)
     return result.set_index("ID") if not result.empty else result
 

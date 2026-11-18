@@ -26,7 +26,9 @@ _print = _make_print(log)
 DEFAULT_KEEP_COLUMNS = (
     "Databank", "ID",
     "1st_diag", "Lst_diag", "1st_diag_date", "Lst_diag_date",
-    "months_to_conversion", "conversion_to", "converted",
+    "1st_stage", "Lst_stage", "max_stage", "1st_etiology", "Lst_etiology", "epilepsy_any",
+    "months_to_conversion", "conversion_to", "converted", "conversion_to_stage",
+    "conversion_direction",
     "gender", "education", "race", "hispanic", "age_at_baseline",
     "APOE_genotype", "APOE_e4_count", "APOE_e4_any",
     # seizures / epilepsy - subject level (history, not paired in time)
@@ -176,7 +178,8 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
     for _f in [ANCHOR] + list(REQUIRED) + list(OPTIONAL):
         _needed_stems.update(MEASURE_GROUPS.get(_f, [_f]))
     _base_cols = {"uid", "ID", "Databank", "dataset", "cohort", "source",
-                  "Lst_diag", "1st_diag_date", "age_at_1st_diag", "age_at_baseline",
+                  "Lst_diag", "Lst_stage", "Lst_etiology", "1st_diag_date",
+                  "age_at_1st_diag", "age_at_baseline",
                   f"{ANCHOR}_untimed_n"} | set(KEEP_COLUMNS) | set(REQUIRED_SUBJECT_COLUMNS)
     _win_tail = re.compile(r"_(pre\d*|pregt\d+|lt\d+|gt\d+)(_acq|_id|_"
                            + "|_".join(EXTRA_CHANNELS) + r")?$")
@@ -188,7 +191,8 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
             usecols.append(c)
             continue
         m_ = _win_tail.search(c)
-        if m_ and (c[:m_.start()] in _needed_stems or c[:m_.start()] == "diag"):
+        if m_ and (c[:m_.start()] in _needed_stems
+                   or c[:m_.start()] in ("diag", "stage", "etiology")):
             usecols.append(c)
     _print(f"Reading {len(usecols)} of {len(header)} columns of the expanded master "
           f"(stems: {sorted(_needed_stems)})")
@@ -207,6 +211,7 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
             if _num.notna().sum() == df[_c].notna().sum():
                 df[_c] = _num
     out_dir = OUT_DIR or os.path.dirname(INPUT_PATH)
+    os.makedirs(out_dir, exist_ok=True)
 
     COHORT_COL = next((c for c in ["Databank", "dataset", "cohort", "source"]
                        if c in df.columns), None)
@@ -588,6 +593,11 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
     diag_cols = [c for c in df.columns if re.fullmatch("diag_" + WIN_RE, c)]
     out["diag_at_anchor"] = pd.NA
     out["diag_source"] = pd.NA
+    # v0.4.0: stage and etiology of the same visit as diag_at_anchor
+    _dx_extra = [k for k in ("stage", "etiology")
+                 if any(re.fullmatch(k + "_" + WIN_RE, c) for c in df.columns)]
+    for _k in _dx_extra:
+        out[f"{_k}_at_anchor"] = pd.NA
     if diag_cols:
         D = df[["uid"] + diag_cols].melt(id_vars="uid", var_name="col", value_name="diag")
         D = D[D["diag"].notna() & (D["diag"].astype(str).str.strip() != "")].copy()
@@ -600,10 +610,15 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
             D = D.merge(Dacq, on=["uid", "col"], how="left")
         else:
             D["acq"] = np.nan
+        for _k in _dx_extra:                 # same windows, same list positions
+            _cols = [f"{_k}_{c[5:]}" for c in diag_cols if f"{_k}_{c[5:]}" in df.columns]
+            Dk = df[["uid"] + _cols].melt(id_vars="uid", var_name="col", value_name=_k)
+            Dk["col"] = "diag_" + Dk["col"].str[len(_k) + 1:]
+            D = D.merge(Dk, on=["uid", "col"], how="left")
         # list cells ("['CN', 'MCI']") = several diagnoses in one window -> one per row
         D = D.reset_index(drop=True)
         D["_row"] = D.index
-        D = explode_lists(D, ["diag", "acq"])
+        D = explode_lists(D, ["diag", "acq"] + _dx_extra)
         D["pos"] = D.groupby("_row").cumcount()
         D["diag"] = D["diag"].astype("string").str.strip()
         D = D[D["diag"].notna() & ~D["diag"].str.lower().isin(["", "nan", "none"])]
@@ -612,7 +627,7 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
 
         # (1) diagnosis in the anchor's window (if several: the closest to the
         #     anchor in time; without a comparable date: the last of the list)
-        same = D[["uid", "w", "diag", "t", "kind", "pos"]] \
+        same = D[["uid", "w", "diag", "t", "kind", "pos"] + _dx_extra] \
             .rename(columns={"w": anchor_win_col, "t": "_dt", "kind": "_dk"})
         tmp = out[["uid", anchor_win_col, "anchor_t", "anchor_kind"]].reset_index() \
             .merge(same, on=["uid", anchor_win_col], how="inner")
@@ -621,6 +636,8 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
         tmp = tmp.sort_values(["event", "_abs", "pos"], ascending=[True, True, False]) \
                  .drop_duplicates("event").set_index("event")
         out.loc[tmp.index, "diag_at_anchor"] = tmp["diag"]
+        for _k in _dx_extra:
+            out.loc[tmp.index, f"{_k}_at_anchor"] = tmp[_k]
         out.loc[out["diag_at_anchor"].notna(), "diag_source"] = "same_window"
 
         # (2) last diagnosis recorded up to the anchor (by date; otherwise by window order)
@@ -628,16 +645,19 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
         if need.any():
             E = out.loc[need, ["uid", "anchor_t", "anchor_kind", anchor_win_col]].reset_index()
             E["a_order"] = E[anchor_win_col].map(win_order)
-            M = E.merge(D[["uid", "diag", "t", "kind", "w_order"]], on="uid", how="inner")
+            M = E.merge(D[["uid", "diag", "t", "kind", "w_order"] + _dx_extra], on="uid", how="inner")
             by_time = (M["kind"] == M["anchor_kind"]) & (M["t"] <= M["anchor_t"])
             by_win = M["kind"].ne(M["anchor_kind"]) & (M["w_order"] <= M["a_order"])
             M = M[by_time | by_win].copy()
             # prefer diagnoses with a comparable date (same kind); among them, the most recent
             M["_same"] = (M["kind"] == M["anchor_kind"]).astype(int)
             M["_key"] = np.where(M["_same"] == 1, M["t"], M["w_order"])
-            last = M.sort_values(["event", "_same", "_key"]).drop_duplicates("event", keep="last") \
-                    .set_index("event")["diag"]
+            lastrows = M.sort_values(["event", "_same", "_key"]).drop_duplicates("event", keep="last") \
+                        .set_index("event")
+            last = lastrows["diag"]
             out.loc[last.index, "diag_at_anchor"] = last
+            for _k in _dx_extra:
+                out.loc[lastrows.index, f"{_k}_at_anchor"] = lastrows[_k]
             out.loc[last.index, "diag_source"] = "last_before_anchor"
 
     # (3) no earlier diagnosis -> Lst_diag (last diagnosis of the subject)
@@ -647,6 +667,9 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
         lst = lst.map(lambda x: split_cell(x)[-1] if pd.notna(x) else x)   # list -> last
         out.loc[need, "diag_at_anchor"] = lst
         out.loc[need & lst.notna(), "diag_source"] = "Lst_diag"
+        for _k, _col in (("stage", "Lst_stage"), ("etiology", "Lst_etiology")):
+            if _k in _dx_extra and _col in df.columns:
+                out.loc[need, f"{_k}_at_anchor"] = out.loc[need, "uid"].map(df.set_index("uid")[_col])
 
     # =============================================================================
     # 6b. months_from_1st_diag and age_at_anchor
@@ -719,7 +742,8 @@ def create_anchor_cohort(input_path: str | os.PathLike, *,
     feat_cols = [c for f in found for c in out.columns if c.startswith(f"{f}_")]
     rest = ["age_at_anchor", "age_at_anchor_source",
             "months_from_1st_diag", "months_from_1st_diag_source",
-            "diag_at_anchor", "diag_source", "n_optional_matched"]
+            "diag_at_anchor", "stage_at_anchor", "etiology_at_anchor", "diag_source",
+            "n_optional_matched"]
     order = list(dict.fromkeys(front + anchor_cols + [c for c in rest if c in out.columns] + feat_cols))
     out = out[order].sort_values(["uid", "anchor_event_n"]).reset_index(drop=True)
 

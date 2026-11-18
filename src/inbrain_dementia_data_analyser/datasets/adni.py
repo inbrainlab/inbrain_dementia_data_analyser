@@ -33,6 +33,7 @@ from functools import reduce
 
 from ..clinical import AED_TEXT_RX, SEIZURE_TEXT_RX, text_flag_series
 from ..datasets.base import DatasetContext
+from ..diagnosis import _get, add_dx_columns, trajectory_record
 from ..fluid import (
     plasma_add_summary,
     plasma_clean_numeric,
@@ -312,6 +313,50 @@ def _classify_visit(row: pd.Series) -> str:
     return "Unknown"
 
 
+ADNI_DXODES_ETIOLOGY = {1: "FTD", 4: "FTD", 5: "FTD", 9: "VaD"}
+ADNI_DXCURREN_STAGE = {1: "CN", 2: "MCI", 3: "DEM"}
+
+
+def _stage_adni(row: pd.Series) -> tuple:
+    """(stage, etiology, epilepsy) of one DXSUM row (v0.4.0).
+
+    Stage: DIAGNOSIS (1 CN, 2 MCI, 3 dementia); ADNI-1 rows: DXCURREN, then the
+    legacy flags. Etiology: for dementia DXAD/DXAPP -> AD, DXODES -> FTD/VaD,
+    DXPCOG = 3 -> LBD; for MCI, DXMDUE (1 = MCI due to AD, 2 = other etiology).
+    """
+    d = _get(row, "DIAGNOSIS")
+    if np.isnan(d):
+        d = _get(row, "DXCURREN")
+    stage = ADNI_DXCURREN_STAGE.get(int(d)) if not np.isnan(d) else None
+    if stage is None:
+        if _get(row, "DXNORM") == 1:
+            stage = "CN"
+        elif _get(row, "DXAD") == 1 or _get(row, "DXAPP") == 1 or _get(row, "DXOTHDEM") == 1:
+            stage = "DEM"
+        elif _get(row, "DXMCI") == 1:
+            stage = "MCI"
+        elif _get(row, "DXPARK") == 1:
+            return "Unknown", "PD", False
+        else:
+            return "Unknown", "unknown", False
+    if stage == "CN":
+        return stage, "none", False
+    if stage == "MCI":
+        due = _get(row, "DXMDUE")
+        return stage, {1: "AD", 2: "Other"}.get(int(due), "unknown") if not np.isnan(due) else "unknown", False
+    parts = []
+    if _get(row, "DXAD") == 1 or _get(row, "DXAPP") == 1:
+        parts.append("AD")
+    odes = _get(row, "DXODES")
+    if not np.isnan(odes) and int(odes) in ADNI_DXODES_ETIOLOGY:
+        parts.append(ADNI_DXODES_ETIOLOGY[int(odes)])
+    if _get(row, "DXPCOG") == 3:
+        parts.append("LBD")
+    if _get(row, "DXOTHDEM") == 1 and not parts:
+        parts.append("Other")
+    return stage, "+".join(sorted(set(parts))) if parts else "unknown", False
+
+
 def build_diagnosis(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
     Returns one row per subject (indexed by PTID / ID) with columns:
@@ -326,7 +371,8 @@ def build_diagnosis(df_raw: pd.DataFrame) -> pd.DataFrame:
     _print("  §1  Diagnosis trajectory...")
     dx = df_raw.copy()
     safe_date(dx, "EXAMDATE")
-    dx["DX_LABEL"] = dx.apply(_classify_visit, axis=1)
+    dx["DX_LABEL"] = dx.apply(_classify_visit, axis=1)       # pre-0.4.0 label -> *_diag_legacy
+    dx = add_dx_columns(dx, _stage_adni)
 
     records = []
     for ptid, grp in dx.sort_values("EXAMDATE").groupby("PTID"):
@@ -334,36 +380,8 @@ def build_diagnosis(df_raw: pd.DataFrame) -> pd.DataFrame:
         if grp.empty:
             continue
 
-        labels      = grp["DX_LABEL"].tolist()
-        dates       = grp["EXAMDATE"].tolist()
-        first_date  = dates[0]
-
-        # Identify every visit where the label differs from the previous one
-        changes_dates, changes_days = [], []
-        prev = labels[0]
-        for lbl, dt in zip(labels[1:], dates[1:]):
-            if lbl != prev:
-                changes_dates.append(dt)
-                changes_days.append(days_from(first_date, dt))
-                prev = lbl
-
-        records.append({
-            "ID"                         : ptid,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : dates[0],
-            "Lst_diag_date"              : dates[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str([str(d.date()) for d in dates]),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-            "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-            "all_time_of_change"         : list_str([str(d.date()) for d in changes_dates]),
-            "all_time_of_change_days_to" : list_str(changes_days),
-            "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-            "nb_of_change"               : len(changes_dates),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        dates = grp["EXAMDATE"].tolist()
+        records.append(trajectory_record(ptid, grp, dates, fmt=lambda d: str(d.date())))
 
     df = pd.DataFrame(records)
     if df.empty:

@@ -48,6 +48,11 @@ Summaries: `MRI_type_disponible`, `PET_tracer_disponible`, `IDA_legacy_types`,
 **Diagnosis trajectory:** `1st_diag`, `Lst_diag`, `1st_diag_date`,
 `Lst_diag_date`, `all_diag`, `all_diag_date`, `nb_of_visits`, `nb_of_change`,
 `1st_time_of_change`, `Lst_time_of_change`, `all_time_of_change`, `Diag_total`.
+Since v0.4.0 (see `docs/diagnosis.md`): `1st_stage`, `Lst_stage`, `max_stage`,
+`all_stage`, `1st_etiology`, `Lst_etiology`, `all_etiology`, `epilepsy_any`,
+`nb_of_epilepsy_visits`, `nb_of_label_change` and the pre-0.4.0 labels
+`1st_diag_legacy`, `Lst_diag_legacy`, `all_diag_legacy`. `all_diag` holds the
+harmonised label; `all_stage` and `all_etiology` are aligned with it.
 
 **Demographics:** `ID`, `gender`, `race`, `hispanic`, `education`,
 `birth_date`, `age_at_1st_diag`, an age-at-entry column (name varies),
@@ -78,8 +83,9 @@ acquisition when the subject has no diagnosis date): `pre6 ... pre240`,
 | `<stem>_<w>_id` | representative image ID (imaging) |
 | `<stem>_<w>_image_ids`, `_manufacturer`, `_model`, `_suvr`, `_centiloid` | imaging channels |
 | `<stem>_<w>_method`, `_batch`, `_rundate` | fluid channels |
-| `diag_<w>`, `diag_<w>_acq` | diagnosis in the window |
-| `months_to_conversion`, `conversion_to`, `converted` | first change of diagnosis |
+| `diag_<w>`, `diag_<w>_acq` | diagnosis (harmonised label) in the window |
+| `stage_<w>`, `etiology_<w>` | stage and primary etiology in the window (same visits as `diag_<w>`) |
+| `months_to_conversion`, `conversion_to`, `converted`, `conversion_to_stage`, `conversion_direction` | first change of STAGE (progression / reversion); `conversion_to` = label at that visit |
 | `baseline_anchor` | `diagnosis` or `first_acq` |
 
 ## Cohort tools
@@ -89,7 +95,7 @@ acquisition when the subject has no diagnosis date): `pre6 ... pre240`,
 `<anchor>_window/_value/_acq/_id/...`, and per matched measure `M`:
 `M_value`, `M_acq`, `M_id`, `M_window`, `M_delta_days` (+ `M_stem` for groups,
 channels, `M_kit` / `M_lab` for fluids); `n_optional_matched`,
-`diag_at_anchor`, `diag_source`, `months_from_1st_diag`
+`diag_at_anchor`, `stage_at_anchor`, `etiology_at_anchor`, `diag_source`, `months_from_1st_diag`
 (+ `_source` exact/window), `age_at_anchor` (+ `_source`).
 `<prefix>_summary.csv`: the same, compact (loniID or value + date per measure).
 `<prefix>_loniIDs.csv`: `uid`, `Databank`, `ID`, `anchor_event_n`,

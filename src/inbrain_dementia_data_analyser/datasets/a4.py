@@ -88,6 +88,7 @@ import re
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import static_record_extra
 from ..fluid import (
     plasma_add_summary,
     plasma_canon_analyte,
@@ -329,11 +330,11 @@ def build_diagnosis(registry: pd.DataFrame) -> pd.DataFrame:
         grp = grp[grp["_done"]]
         records.append({
             "ID"                         : ptid,
-            "1st_diag"                   : "CU",
-            "Lst_diag"                   : "CU",
+            "1st_diag"                   : "CN",
+            "Lst_diag"                   : "CN",
             "1st_diag_date"              : grp["_examday"].min(),
             "Lst_diag_date"              : grp["_examday"].max(),
-            "all_diag"                   : "CU",
+            "all_diag"                   : "CN",
             "all_diag_date"              : _na_list(grp["_examday"].tolist()),
             "nb_of_visits"               : len(grp),
             "1st_time_of_change"         : np.nan,
@@ -342,7 +343,8 @@ def build_diagnosis(registry: pd.DataFrame) -> pd.DataFrame:
             "all_time_of_change_days_to" : np.nan,
             "Lst_time_of_change"         : np.nan,
             "nb_of_change"               : 0,
-            "Diag_total"                 : "CU",
+            "Diag_total"                 : "CN",
+            **static_record_extra("CN", "none", "CU"),
         })
 
     result = pd.DataFrame(records)
