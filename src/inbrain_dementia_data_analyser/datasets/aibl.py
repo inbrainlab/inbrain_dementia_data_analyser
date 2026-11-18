@@ -35,6 +35,7 @@ from collections import Counter
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import _get, add_dx_columns, trajectory_record
 from ..imaging.ida import (
     ida_build_acquisitions,
     ida_classify,
@@ -305,6 +306,30 @@ def _classify_aibl(row: pd.Series) -> str:
     return "Unknown"
 
 
+AIBL_DXCURREN = {1: ("CN", "none"), 2: ("MCI", "unknown"), 3: ("DEM", "AD"),
+                 4: ("Unknown", "PD"), 5: ("DEM", "Other")}
+
+
+def _stage_aibl(row: pd.Series) -> tuple:
+    """(stage, etiology, epilepsy): DXCURREN first (1 CN, 2 MCI, 3 AD dementia,
+    4 PD, 5 other dementia); the boolean flags only when DXCURREN is missing."""
+    dc = _get(row, "DXCURREN")
+    if not np.isnan(dc) and int(dc) in AIBL_DXCURREN:
+        st, et = AIBL_DXCURREN[int(dc)]
+        return st, et, False
+    if _get(row, "DXNORM") == 1:
+        return "CN", "none", False
+    if _get(row, "DXAD") == 1:
+        return "DEM", "AD", False
+    if _get(row, "DXOTHDEM") == 1:
+        return "DEM", "Other", False
+    if _get(row, "DXMCI") == 1:
+        return "MCI", "unknown", False
+    if _get(row, "DXPARK") == 1:
+        return "Unknown", "PD", False
+    return "Unknown", "unknown", False
+
+
 def build_diagnosis(df_dx: pd.DataFrame,
                     df_date_src: pd.DataFrame) -> pd.DataFrame:
     """
@@ -333,42 +358,15 @@ def build_diagnosis(df_dx: pd.DataFrame,
         dx["EXAMDATE"] = pd.NaT
     dx["_approx_order"] = pd.to_numeric(dx.get("VISCODE", 0), errors="coerce").fillna(0)
 
-    dx["DX_LABEL"] = dx.apply(_classify_aibl, axis=1)
+    dx["DX_LABEL"] = dx.apply(_classify_aibl, axis=1)      # pre-0.4.0 label -> *_diag_legacy
+    dx = add_dx_columns(dx, _stage_aibl)
 
     records = []
     for ptid, grp in dx.sort_values(["PTID", "_approx_order"]).groupby("PTID"):
         grp = grp.sort_values("_approx_order")
-        labels = grp["DX_LABEL"].tolist()
         dates  = grp["EXAMDATE"].tolist()
-        first_date = dates[0]
-
-        changes_dates, changes_days = [], []
-        prev = labels[0]
-        for lbl, dt in zip(labels[1:], dates[1:]):
-            if lbl != prev:
-                changes_dates.append(dt)
-                changes_days.append(days_from(first_date, dt))
-                prev = lbl
-
         d_fmt = lambda d: str(d.date()) if pd.notna(d) and hasattr(d, "date") else np.nan
-
-        records.append({
-            "ID"                         : ptid,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : dates[0],
-            "Lst_diag_date"              : dates[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str([d_fmt(d) for d in dates]),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-            "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-            "all_time_of_change"         : list_str([d_fmt(d) for d in changes_dates]),
-            "all_time_of_change_days_to" : list_str(changes_days),
-            "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-            "nb_of_change"               : len(changes_dates),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        records.append(trajectory_record(ptid, grp, dates, fmt=d_fmt))
 
     df = pd.DataFrame(records)
     return df.set_index("ID") if not df.empty else df

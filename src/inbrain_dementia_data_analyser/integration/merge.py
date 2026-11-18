@@ -452,7 +452,11 @@ def merge_cohorts(root_path: str | os.PathLike, datasets: list[str] | None = Non
         "APOE_genotype", "APOE_e4_count", "APOE_e4_any",
         "1st_diag", "Lst_diag", "1st_diag_date", "Lst_diag_date",
         "all_diag", "all_diag_date", "Diag_total",
-        "nb_of_visits", "nb_of_change",
+        "1st_stage", "Lst_stage", "max_stage", "all_stage",
+        "1st_etiology", "Lst_etiology", "all_etiology",
+        "epilepsy_any", "nb_of_epilepsy_visits",
+        "1st_diag_legacy", "Lst_diag_legacy", "all_diag_legacy",
+        "nb_of_visits", "nb_of_change", "nb_of_label_change",
         "1st_time_of_change", "Lst_time_of_change", "all_time_of_change",
     ]
     front = [c for c in PRIORITY if c in master.columns]
@@ -489,6 +493,9 @@ def merge_cohorts(root_path: str | os.PathLike, datasets: list[str] | None = Non
         for (_c, _k), _v in sorted(_unmapped_demog.items()):
             _print(f"   - {_c:<10} {_k:<14} {sorted(_v)[:12]}")
     
+    if "1st_stage" in master.columns:
+        _print("\nCognitive stage at the first visit with a stage (subjects):")
+        _print(pd.crosstab(master["Databank"], master["1st_stage"].fillna("(missing)")).to_string())
     if "1st_diag" in master.columns:
         _print("\nHarmonised 1st_diag (primary label only):")
         prim = master["1st_diag"].astype(str).str.split("+").str[0]

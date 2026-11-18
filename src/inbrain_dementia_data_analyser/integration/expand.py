@@ -661,9 +661,12 @@ def expand_master(master_path: str | os.PathLike, out_path: str | os.PathLike, *
             _print(f"  expanded CSF (+0 cols)  -> {nonempty} have values but none could be "
                   f"anchored/dated (check all_pct_date_collection)")
 
-    # diagnosis spread (value + acq)
-    if "all_diag" in df.columns:
-        L_dval = df["all_diag"].tolist()
+    # diagnosis spread (value + acq). v0.4.0: the stage and etiology of each visit
+    # (all_stage / all_etiology, aligned with all_diag) get their own windows.
+    _dx_channels = [(name, col) for name, col in (("diag", "all_diag"), ("stage", "all_stage"),
+                                                  ("etiology", "all_etiology")) if col in df.columns]
+    for _dx_name, _dx_col in _dx_channels:
+        L_dval = df[_dx_col].tolist()
         L_ddate = (df["all_diag_date"].tolist() if "all_diag_date" in df.columns else [""] * n)
         ddata = {}
 
@@ -688,12 +691,31 @@ def expand_master(master_path: str | os.PathLike, out_path: str | os.PathLike, *
                 b = bucket.setdefault(w, {"v": [], "a": []})
                 b["v"].append(v); b["a"].append(a)
             for w, b in bucket.items():
-                dcell(f"diag_{w}", i, first_or_list(b["v"]))
-                dcell(f"diag_{w}_acq", i, first_or_list(b["a"]))
+                dcell(f"{_dx_name}_{w}", i, first_or_list(b["v"]))
+                if _dx_name == "diag":
+                    dcell(f"diag_{w}_acq", i, first_or_list(b["a"]))
         if ddata:
             frames.append(pd.DataFrame(ddata, index=df.index))
 
-    # conversion timing (months from first diagnosis to first label change)
+    # conversion timing. v0.4.0: first change of cognitive STAGE (CN, IMPNOMCI,
+    # MCI, DEM), so a new etiology or an epilepsy record is not a conversion.
+    _STAGE_RANK = {"CN": 0, "IMPNOMCI": 1, "MCI": 2, "DEM": 3}
+
+    def stage_conversion_info(stage_cell, diag_cell, date_cell, bank, ak, av):
+        stages = parse_list(stage_cell); diags = parse_list(diag_cell); dates = parse_list(date_cell)
+        known = [(j, str(s).strip()) for j, s in enumerate(stages) if str(s).strip() in _STAGE_RANK]
+        if not known:
+            return (np.nan, np.nan, 0, np.nan, np.nan)
+        base = known[0][1]
+        for j, st in known[1:]:
+            if st != base:
+                a = dates[j] if j < len(dates) else ""
+                mo = months_since(a, ak, av, bank)
+                lab = diags[j] if j < len(diags) else st
+                direction = "progression" if _STAGE_RANK[st] > _STAGE_RANK[base] else "reversion"
+                return (round(mo, 1) if mo is not None else np.nan, lab, 1, st, direction)
+        return (np.nan, np.nan, 0, np.nan, np.nan)
+
     def conversion_info(diag_cell, date_cell, bank, ak, av):
         diags = parse_list(diag_cell); dates = parse_list(date_cell)
         if not diags:
@@ -710,7 +732,20 @@ def expand_master(master_path: str | os.PathLike, out_path: str | os.PathLike, *
         return (np.nan, np.nan, 0)
 
 
-    if "all_diag" in df.columns:
+    if "all_stage" in df.columns:
+        L_sval = df["all_stage"].tolist()
+        L_dval = df["all_diag"].tolist() if "all_diag" in df.columns else [""] * n
+        L_ddate = (df["all_diag_date"].tolist() if "all_diag_date" in df.columns else [""] * n)
+        info = [stage_conversion_info(s, v, d, b, ak, av)
+                for s, v, d, b, ak, av in zip(L_sval, L_dval, L_ddate, banks, anchor_kind, anchor_pv)]
+        frames.append(pd.DataFrame({
+            "months_to_conversion": [x[0] for x in info],
+            "conversion_to":        [x[1] for x in info],
+            "converted":            [x[2] for x in info],
+            "conversion_to_stage":  [x[3] for x in info],
+            "conversion_direction": [x[4] for x in info],
+        }, index=df.index))
+    elif "all_diag" in df.columns:          # per-dataset tables written before v0.4.0
         L_dval = df["all_diag"].tolist()
         L_ddate = (df["all_diag_date"].tolist() if "all_diag_date" in df.columns else [""] * n)
         info = [conversion_info(v, d, b, ak, av) for v, d, b, ak, av in zip(L_dval, L_ddate, banks, anchor_kind, anchor_pv)]

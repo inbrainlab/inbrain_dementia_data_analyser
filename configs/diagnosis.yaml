@@ -1,7 +1,10 @@
 # =============================================================================
 # DIAGNOSIS LABELS (applied by integration.merge to 1st_diag, Lst_diag, all_diag ...)
 # =============================================================================
-# Raw label (upper case) -> canonical label. Compound labels ('AD+VaD') and
+# Raw label (upper case) -> canonical label. Since v0.4.0 the pipelines write
+# harmonised labels (CN, IMPNOMCI, MCI, AD, LBD, ..., Dementia-NOS, Dementia-Other);
+# the stage (all_stage) and etiology (all_etiology) are separate columns.
+# Compound labels ('AD+VaD') and
 # visit lists ('CN|CN|MCI') are mapped token by token. Unknown tokens are kept
 # and listed at the end of the merge so this map can be extended.
 # =============================================================================
@@ -13,6 +16,10 @@ diag_map:
   NORMAL: CN
   HC: CN
   MCI: MCI
+  IMPNOMCI: IMPNOMCI
+  DEMENTIA-OTHER: Dementia-Other
+  EPILEPSY: Dementia-Other
+  OTHER: OtherDx
   AD: AD
   DEMENTIA: Dementia-NOS
   DEMENTIA-NOS: Dementia-NOS
@@ -44,4 +51,5 @@ diag_map:
   NAT: Unknown
   NONE: Unknown
   ' ': Unknown
-label_columns: [1st_diag, Lst_diag, all_diag, Diag_total, diag_total]
+label_columns: [1st_diag, Lst_diag, all_diag, Diag_total, diag_total, 1st_diag_legacy, Lst_diag_legacy,
+                all_diag_legacy]

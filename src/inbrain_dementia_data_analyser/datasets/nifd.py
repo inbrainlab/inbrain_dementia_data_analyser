@@ -48,6 +48,7 @@ import re
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import add_dx_columns, trajectory_record
 from ..imaging.ida import (
     ida_build_acquisitions,
     ida_classify,
@@ -355,42 +356,34 @@ def _classify_nifd(raw_dx) -> str:
     return "+".join(labels) if labels else "Unknown"
 
 
+NIFD_SYNDROME = {"BV": "bvFTD", "PNFA": "nfvPPA", "SV": "svPPA", "OTH": "Other", "OTHER": "Other"}
+
+
+def _stage_nifd(row: pd.Series) -> tuple:
+    """(stage, etiology, epilepsy): controls -> CN; patients keep their FTLD
+    syndrome as etiology with stage Unknown (NIFD records no severity stage)."""
+    raw = row.get("DX")
+    if pd.isna(raw):
+        return "Unknown", "unknown", False
+    parts = [p.strip().upper() for p in str(raw).split("+") if p.strip()]
+    if parts and all(p == "CON" for p in parts):
+        return "CN", "none", False
+    syn = sorted({NIFD_SYNDROME.get(p, p) for p in parts if p != "CON"})
+    return "Unknown", "+".join(syn) if syn else "unknown", False
+
+
 def build_diagnosis(df: pd.DataFrame) -> pd.DataFrame:
     _print("  §1  Diagnosis trajectory...")
     safe_date(df, "CLINICAL_LINKDATE")
     dx = df[["LONI_ID", "CLINICAL_LINKDATE", "VISIT_NUMBER", "DX"]].copy()
-    dx["DX_LABEL"] = dx["DX"].apply(_classify_nifd)
+    dx["DX_LABEL"] = dx["DX"].apply(_classify_nifd)   # pre-0.4.0 label
+    dx = add_dx_columns(dx, _stage_nifd)
     dx = dx.sort_values(["LONI_ID", "CLINICAL_LINKDATE", "VISIT_NUMBER"])
     records = []
     for ptid, grp in dx.groupby("LONI_ID"):
         grp    = grp.sort_values(["CLINICAL_LINKDATE", "VISIT_NUMBER"])
-        labels = grp["DX_LABEL"].tolist()
         dates  = grp["CLINICAL_LINKDATE"].tolist()
-        first_date = dates[0]
-        changes_dates, changes_days = [], []
-        prev = labels[0]
-        for lbl, dt in zip(labels[1:], dates[1:]):
-            if lbl != prev:
-                changes_dates.append(dt)
-                changes_days.append(days_from(first_date, dt))
-                prev = lbl
-        records.append({
-            "ID"                         : ptid,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : dates[0],
-            "Lst_diag_date"              : dates[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str([d_fmt(d) for d in dates]),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-            "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-            "all_time_of_change"         : list_str([d_fmt(d) for d in changes_dates]),
-            "all_time_of_change_days_to" : list_str(changes_days),
-            "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-            "nb_of_change"               : len(changes_dates),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        records.append(trajectory_record(ptid, grp, dates))
     result = pd.DataFrame(records)
     return result.set_index("ID") if not result.empty else result
 

@@ -111,4 +111,4 @@ def test_a4_not_done_registry_visits_are_not_counted():
     a4._CTX = None
     out = a4.build_diagnosis(reg)
     assert out.loc["B1", "all_diag_date"] == "0.0|40.0" and out.loc["B1", "nb_of_visits"] == 2
-    assert out.loc["B2", "1st_diag"] == "CU" and out.loc["B2", "nb_of_visits"] == 0
+    assert out.loc["B2", "1st_diag"] == "CN" and out.loc["B2", "1st_diag_legacy"] == "CU" and out.loc["B2", "nb_of_visits"] == 0

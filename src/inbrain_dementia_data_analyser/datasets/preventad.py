@@ -98,10 +98,12 @@ import gc
 import numpy as np
 import os
 import pandas as pd
+import re
 from functools import reduce
 
 from ..clinical import AED_TEXT_RX, compute_bmi, text_flag_series
 from ..datasets.base import DatasetContext
+from ..diagnosis import add_dx_columns, trajectory_record
 from ..fluid import plasma_add_summary, plasma_clean_numeric
 from ..imaging.sessions import session_id_columns
 from ..series import build_scored_columns, d_fmt, list_str, safe_date
@@ -273,20 +275,13 @@ def _nps_from_df(df: pd.DataFrame, test_name: str,
 # Most will remain CU; a subset progresses to MCI or dementia during follow-up.
 # =============================================================================
 
-CLINICAL_DX_MAP = {
-    # Common strings found in free-text Clinical_diagnosis
-    "cu"               : "CN",
-    "cognitively unimpaired": "CN",
-    "normal"           : "CN",
-    "healthy"          : "CN",
-    "mci"              : "MCI",
-    "mild cognitive"   : "MCI",
-    "amci"             : "MCI",
-    "naMCI"            : "MCI",
-    "dementia"         : "DEMENTIA",
-    "alzheimer"        : "AD",
-    "ad"               : "AD",
-}
+CLINICAL_DX_MAP = [            # (regular expression, label); first match wins
+    (r"\bscd\b|subjective", "CN"),
+    (r"\bmci\b|mild cognitive|\bamci\b|\bnamci\b", "MCI"),
+    (r"alzheimer|\bad\b", "AD"),
+    (r"dementia", "DEMENTIA"),
+    (r"\bcu\b|cognitively unimpaired|normal|healthy", "CN"),
+]
 
 
 def _classify_rc_mci(val) -> str:
@@ -312,10 +307,29 @@ def _classify_clinical_dx(val) -> str | None:
     if pd.isna(val) or str(val).strip() == "":
         return None
     t = str(val).strip().lower()
-    for key, label in CLINICAL_DX_MAP.items():
-        if key in t:
+    for rx, label in CLINICAL_DX_MAP:
+        if re.search(rx, t):
             return label
     return str(val).strip()[:30]   # keep raw if unmapped
+
+
+def _stage_preventad(row: pd.Series) -> tuple:
+    """(stage, etiology, epilepsy) from the research classification RC_MCI (CU / MCI)."""
+    lab = row.get("DX_LABEL")
+    if lab == "CN":
+        return "CN", "none", False
+    if lab == "MCI":
+        return "MCI", "unknown", False
+    return "Unknown", "unknown", False
+
+
+def _date_delta(a, b) -> float:
+    try:
+        if pd.notna(a) and pd.notna(b):
+            return float((pd.to_datetime(b) - pd.to_datetime(a)).days)
+    except Exception:  # noqa: BLE001
+        pass
+    return np.nan
 
 
 def build_diagnosis(df_mci: pd.DataFrame,
@@ -329,30 +343,12 @@ def build_diagnosis(df_mci: pd.DataFrame,
         safe_date(mci, "Date")
         mci["_sort"] = sort_key(mci)
         mci["DX_LABEL"] = mci["RC_MCI"].apply(_classify_rc_mci)
+        mci = add_dx_columns(mci, _stage_preventad)
         mci = mci.sort_values(["PTID", "_sort"])
 
         for ptid, grp in mci.groupby("PTID"):
-            labels = grp["DX_LABEL"].tolist()
             dates  = grp.get("Date", grp.get("Date_taken",
                              pd.Series([pd.NaT]*len(grp)))).tolist()
-            first_date = dates[0]
-
-            changes_dates, changes_days = [], []
-            prev = labels[0]
-            for lbl, dt in zip(labels[1:], dates[1:]):
-                if lbl != prev:
-                    changes_dates.append(dt)
-                    try:
-                        if pd.notna(first_date) and pd.notna(dt):
-                            delta = (pd.to_datetime(dt) -
-                                     pd.to_datetime(first_date)).days
-                        else:
-                            delta = np.nan
-                    except Exception:
-                        delta = np.nan
-                    changes_days.append(delta)
-                    prev = lbl
-
             subtypes = (
                 grp["RC_MCI_subtype"]
                 .replace({0: np.nan, "0": np.nan})
@@ -361,26 +357,9 @@ def build_diagnosis(df_mci: pd.DataFrame,
                 .tolist()
             ) if "RC_MCI_subtype" in grp.columns else []
 
-            records[ptid] = {
-                "ID"                         : ptid,
-                "1st_diag"                   : labels[0],
-                "Lst_diag"                   : labels[-1],
-                "1st_diag_date"              : dates[0],
-                "Lst_diag_date"              : dates[-1],
-                "all_diag"                   : list_str(labels),
-                "all_diag_date"              : list_str([d_fmt(d)
-                                                          for d in dates]),
-                "nb_of_visits"               : len(grp),
-                "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-                "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-                "all_time_of_change"         : list_str([d_fmt(d)
-                                                          for d in changes_dates]),
-                "all_time_of_change_days_to" : list_str(changes_days),
-                "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-                "nb_of_change"               : len(changes_dates),
-                "Diag_total"                 : list_str(sorted(set(labels))),
-                "MCI_subtype_all"            : list_str(subtypes),
-            }
+            rec = trajectory_record(ptid, grp, dates, delta=_date_delta)
+            rec["MCI_subtype_all"] = list_str(subtypes)
+            records[ptid] = rec
 
     # ── Supplement: clinical diagnosis (external) ─────────────────────────────
     if not df_cdx.empty:

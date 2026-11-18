@@ -50,6 +50,7 @@ from functools import reduce
 
 from ..clinical import AED_TEXT_RX, text_flag_series
 from ..datasets.base import DatasetContext
+from ..diagnosis import add_dx_columns, trajectory_record, uds_d1_stage_etiology
 from ..imaging.ida import (
     ida_build_acquisitions,
     ida_classify,
@@ -360,40 +361,16 @@ def build_diagnosis(df_raw: pd.DataFrame) -> pd.DataFrame:
     _print("  §1  Diagnosis trajectory...")
     dx = normalise_id(df_raw.copy())
     dx = make_visit_date(dx)
-    dx["DX_LABEL"] = dx.apply(_classify_abvib, axis=1)
+    dx["DX_LABEL"] = dx.apply(_classify_abvib, axis=1)   # pre-0.4.0 label -> *_diag_legacy
+    dx = add_dx_columns(dx, uds_d1_stage_etiology)  # UDS D1 v1.2-v3 (upper/lower case)
     dx = dx.sort_values(["PTID", "_date",
                           "VISITNUM"] if "VISITNUM" in dx.columns
                         else ["PTID", "_date"])
     records = []
     for ptid, grp in dx.groupby("PTID"):
         grp    = grp.sort_values("_date")
-        labels = grp["DX_LABEL"].tolist()
         dates  = grp["_date"].tolist()
-        first_date = dates[0]
-        changes_dates, changes_days = [], []
-        prev = labels[0]
-        for lbl, dt in zip(labels[1:], dates[1:]):
-            if lbl != prev:
-                changes_dates.append(dt)
-                changes_days.append(days_from(first_date, dt))
-                prev = lbl
-        records.append({
-            "ID"                         : ptid,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : dates[0],
-            "Lst_diag_date"              : dates[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str([d_fmt(d) for d in dates]),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-            "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-            "all_time_of_change"         : list_str([d_fmt(d) for d in changes_dates]),
-            "all_time_of_change_days_to" : list_str(changes_days),
-            "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-            "nb_of_change"               : len(changes_dates),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        records.append(trajectory_record(ptid, grp, dates))
     result = pd.DataFrame(records)
     return result.set_index("ID") if not result.empty else result
 

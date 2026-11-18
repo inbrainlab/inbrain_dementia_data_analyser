@@ -192,7 +192,8 @@ ida.expand_master(ROOT + "/Integrated_ALL/MASTER_all_cohorts.csv",
 The merge renames columns (`configs/harmonization.yaml`), recodes sex, race,
 ethnicity, education, handedness and APOE per dataset
 (`configs/demographics.yaml`; originals kept in `<column>_raw`), maps
-diagnosis labels (`configs/diagnosis.yaml`) and stacks the datasets with
+diagnosis labels (`configs/diagnosis.yaml`; since v0.4.0 every visit has a
+cognitive stage and a primary etiology, see `docs/diagnosis.md`) and stacks the datasets with
 `Databank` and `uid = <Databank>_<ID>`. The expansion places every measure in
 6-month windows around the first-diagnosis date (`pre…`, `lt6 … lt240`,
 `gt240`).
@@ -378,7 +379,7 @@ codebooks in `configs/demographics.yaml`.
 | `configs/variables.yaml` | scored variables and their sources ([docs/variables.md](docs/variables.md)) |
 | `configs/harmonization.yaml` | renames at merge time, baseline-age priority |
 | `configs/demographics.yaml` | sex, race, ethnicity, handedness, education and APOE codebooks |
-| `configs/diagnosis.yaml` | diagnosis label map |
+| `configs/diagnosis.yaml` | diagnosis label map (rules per cohort: `docs/diagnosis.md`) |
 | `configs/imaging.yaml` | imaging types, measure groups, fluid-biomarker groups |
 | `configs/integration.yaml` | merge order, window size, time-axis units |
 | `configs/cohorts/*.yaml` | example cohort definitions for the CLI |
@@ -395,6 +396,11 @@ Details: [docs/configuration.md](docs/configuration.md).
 * `pytest` runs the tests (synthetic data only).
 
 ## 8. Known limitations
+
+* **Diagnosis** - since v0.4.0 the label is built from a cognitive stage
+  (CN / IMPNOMCI / MCI / DEM) and a primary etiology (`docs/diagnosis.md`).
+  MCSA has no etiology; NIFD and 4RTNI have no stage; the MCSA code
+  `FCOGIMPR = 4` is undocumented and treated as Unknown.
 
 * **ADNI** - ECog totals (`ECOG_PT`, `ECOG_SP`) are sums of the answered
   items of the 12-item forms (code 9 "don't know" excluded); the usual ECog

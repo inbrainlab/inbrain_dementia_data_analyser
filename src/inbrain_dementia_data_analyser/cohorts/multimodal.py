@@ -117,6 +117,9 @@ PREFER = "most_modalities"      # "most_modalities" | "tightest"
 KEEP_COLUMNS = [
     "Databank", "ID",
     "1st_diag", "Lst_diag", "1st_diag_date",
+    "1st_stage", "Lst_stage", "max_stage", "1st_etiology", "Lst_etiology", "epilepsy_any",
+    "converted", "conversion_to", "conversion_to_stage", "conversion_direction",
+    "months_to_conversion",
     "gender", "education", "race", "age_at_baseline",
     "APOE_genotype", "APOE_e4_count",
 ]

@@ -108,6 +108,8 @@ import pandas as pd
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import (UDS_ETIOLOGIES, UDS_MCI_COLS, add_dx_columns,
+                         nacc_stage_etiology, trajectory_record)
 from ..fluid import plasma_series
 from ..imaging.scanner import add_scanner_channels, norm_vendor
 from ..imaging.sessions import session_id_columns
@@ -194,6 +196,8 @@ DX_DERIVED_COLS = [
     "CVDIF",      # Cerebrovascular disease
     "VASCIF",     # Vascular dementia
     'EPILEPIF',
+    "NACCUDSD",   # v0.4.0: cognitive stage (1 CN, 2 impaired-not-MCI, 3 MCI, 4 dementia)
+    "NACCETPR",   # v0.4.0: primary etiologic diagnosis (one per visit)
 ]
 
 # Full UDS D1 boolean flags (fallback when NACC-derived absent)
@@ -208,7 +212,10 @@ DX_UDS_COLS = [
     "MCINON1", "MCIN1LAN", "MCIN1ATT", "MCIN1EX", "MCIN1VIS",
     "MCINON2", "MCIN2LAN", "MCIN2ATT", "MCIN2EX", "MCIN2VIS", "IMPNOMCI", 'EPILEP',
 ]
-DX_FLAG_COLS = DX_DERIVED_COLS + DX_UDS_COLS
+# v0.4.0: the UDS D1 fallback also needs the primary / contributing (…IF) columns
+DX_FLAG_COLS = list(dict.fromkeys(
+    DX_DERIVED_COLS + DX_UDS_COLS
+    + [c for _e, flag_, if_ in UDS_ETIOLOGIES for c in (flag_, if_)] + UDS_MCI_COLS))
 
 # NPS columns (all numeric; negative values → NaN)
 NPS_NUMERIC_COLS = [
@@ -509,45 +516,14 @@ def _classify_nacc(row: pd.Series) -> str:
 def build_diagnosis(df: pd.DataFrame) -> pd.DataFrame:
     _print("  §1  Diagnosis trajectory...")
     df = df.sort_values(["NACCID", "_date"])
-    df["DX_LABEL"] = df.apply(_classify_nacc, axis=1)
+    df["DX_LABEL"] = df.apply(_classify_nacc, axis=1)    # pre-0.4.0 label -> *_diag_legacy
+    df = add_dx_columns(df, nacc_stage_etiology)
 
     records = []
     for ptid, grp in df.groupby("NACCID"):
         grp    = grp.sort_values("_date")
-        labels = grp["DX_LABEL"].tolist()
         dates  = grp["_date"].tolist()
-        first_date = dates[0]
-
-        changes_dates, changes_days = [], []
-        prev = labels[0]
-        for lbl, dt in zip(labels[1:], dates[1:]):
-            if lbl != prev:
-                changes_dates.append(dt)
-                try:
-                    delta = float((dt - first_date).days) \
-                            if pd.notna(dt) and pd.notna(first_date) else np.nan
-                except Exception:
-                    delta = np.nan
-                changes_days.append(delta)
-                prev = lbl
-
-        records.append({
-            "ID"                         : ptid,
-            "1st_diag"                   : labels[0],
-            "Lst_diag"                   : labels[-1],
-            "1st_diag_date"              : dates[0],
-            "Lst_diag_date"              : dates[-1],
-            "all_diag"                   : list_str(labels),
-            "all_diag_date"              : list_str([d_fmt(d) for d in dates]),
-            "nb_of_visits"               : len(grp),
-            "1st_time_of_change"         : changes_dates[0]  if changes_dates else np.nan,
-            "1st_time_of_change_days_to" : changes_days[0]   if changes_days  else np.nan,
-            "all_time_of_change"         : list_str([d_fmt(d) for d in changes_dates]),
-            "all_time_of_change_days_to" : list_str(changes_days),
-            "Lst_time_of_change"         : changes_dates[-1] if changes_dates else np.nan,
-            "nb_of_change"               : len(changes_dates),
-            "Diag_total"                 : list_str(sorted(set(labels))),
-        })
+        records.append(trajectory_record(ptid, grp, dates))
 
     result = pd.DataFrame(records)
     return result.set_index("ID") if not result.empty else result

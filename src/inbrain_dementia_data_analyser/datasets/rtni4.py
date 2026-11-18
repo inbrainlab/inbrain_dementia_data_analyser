@@ -98,6 +98,7 @@ import re
 from functools import reduce
 
 from ..datasets.base import DatasetContext
+from ..diagnosis import harmonised_label, static_record_extra
 from ..imaging.ida import (
     ida_build_acquisitions,
     ida_classify,
@@ -486,7 +487,9 @@ def build_diagnosis(df: pd.DataFrame) -> pd.DataFrame:
 
     records = []
     for ptid, row in df.set_index("PTID").iterrows():
-        dx_label = _classify_4rtni(row.get("DX", np.nan))
+        legacy = _classify_4rtni(row.get("DX", np.nan))
+        etiology = {"PSP": "PSP", "CBD": "CBS", "OtherDx": "Other"}.get(legacy, "unknown")
+        dx_label = harmonised_label("Unknown", etiology)   # stage not recorded in 4RTNI
 
         # Estimate visit count from non-null SCANIDs
         n_visits = sum(
@@ -522,6 +525,7 @@ def build_diagnosis(df: pd.DataFrame) -> pd.DataFrame:
             "disease_duration_at_enroll" : row.get("DDURATION", np.nan),
             "autopsy_date"               : row.get("AUTOPSYDATE", np.nan),
             "autopsy_pathology"          : row.get("AUTOPSYPX", np.nan),
+            **static_record_extra("Unknown", etiology, legacy),
         })
 
     result = pd.DataFrame(records)
