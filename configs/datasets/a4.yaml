@@ -113,3 +113,43 @@ tables:
     date_columns: [VISCODE]
 settings:
   plasma_file_regex: plasma|ptau|p-tau|pt217|biomarker|roche|c2n|nfl|gfap
+  # Plasma tables of the A4/LEARN release ('External Data'; found anywhere
+  # under Tables_A4/), read as long tables: {regular expression on the file name: spec}. test_map keeps only
+  # the listed tests. Files without a spec that match plasma_file_regex are
+  # read by auto-discovery. The collection day comes from the file's own
+  # *_DAYS_CONSENT column when present, otherwise from the registry (VISCODE).
+  plasma_specs:
+    ^biomarker_pTau217:
+      test_col: TESTCD
+      value_col: ORRES
+      method: METHOD
+      lab: Lilly Clinical Diagnostics Laboratory
+      kit: MSD p-tau217
+      test_map: {PTAU217: Plasma_pTau217_Lilly}
+    ^biomarker_Plasma_Roche:
+      test_col: LBTESTCD
+      value_col: LABRESN
+      method: LBMETHOD
+      lab: Roche
+      kit: Elecsys
+      test_map:
+        TPP181: Plasma_pTau181_Roche
+        AMYLB42: Plasma_AB42_Roche
+        AMYLB40: Plasma_AB40_Roche
+        NF-L: Plasma_NfL_Roche
+        GFAP: Plasma_GFAP_Roche
+    ^biomarker_AB_Test:
+      test_col: LBTESTCD
+      value_col: LBORRES
+      method: LBMETHOD
+      lab: Araclon Biotech
+      kit: ABtest
+      test_map:
+        TP42/TP40: Plasma_AB42_40_Araclon
+        TP42: Plasma_AB42_Araclon_total
+        TP40: Plasma_AB40_Araclon_total
+        FP42: Plasma_AB42_Araclon_free
+        FP40: Plasma_AB40_Araclon_free
+        BP42: Plasma_AB42_Araclon_bound
+        BP40: Plasma_AB40_Araclon_bound
+        FP42/FP40: Plasma_AB42_40_Araclon_free

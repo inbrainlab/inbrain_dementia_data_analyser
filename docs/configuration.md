@@ -39,10 +39,16 @@ Table entries:
 Settings in use:
 
 * ADNI: `plasma_specs`, `lab_specs`, `csf_extra_specs` (tables found by name
-  stem under `Tables_ADNI/`, markers `[raw column, output name, (lab), (kit)]`),
+  stem under `Tables_ADNI/`, markers `[raw column, output name, (lab), (kit)]`;
+  a long table, one row per test, takes `long: true`, `test_col`, `value_col`
+  and `test_map: {raw test name: output name}`, which reads only the listed
+  tests),
   `medhist_tables`, `csf_main_lab`, `csf_main_kit`;
 * ABVIB: `table_date_columns` (tables with their own date column);
-* A4: `plasma_file_regex`;
+* A4: `plasma_file_regex` (plasma files found anywhere under `Tables_A4/`) and
+  `plasma_specs` (`{regular expression on the file name: long-table spec}`,
+  same keys as above; the collection day is read from the file's
+  `*_DAYS_CONSENT` column when present);
 * NACC: `chunk_size`.
 
 ## `variables.yaml`

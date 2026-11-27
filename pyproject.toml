@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inbrain_dementia_data_analyser"
-version = "0.4.0"
+version = "0.4.1"
 description = "Harmonisation of ten public dementia and ageing cohorts and creation of multimodal study cohorts (InBrain lab, University of Sao Paulo)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "InBrain lab, University of Sao Paulo" }]
 dependencies = [
-    "pandas>=2.0",
+    "pandas>=2.0,<3",          # pandas 3 not validated (see docs/REFACTOR_REPORT.md, section 9)
     "numpy>=1.23",
     "openpyxl>=3.1",
     "PyYAML>=6.0",
