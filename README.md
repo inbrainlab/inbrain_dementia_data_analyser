@@ -406,10 +406,18 @@ Details: [docs/configuration.md](docs/configuration.md).
   items of the 12-item forms (code 9 "don't know" excluded); the usual ECog
   score is the mean, available with `transform: mean`. Plasma tables are found
   by table name anywhere under `Tables_ADNI/`. Ethnicity is not extracted.
+  `URMC_LABDATA` (ADNI3/4 clinical laboratory, long format) is not read; the
+  laboratory markers come from `LABDATA`.
 * **A4** - no calendar dates: time is `EXAMDAY` (days since consent). The MRI
   day of LEARN subjects is imputed as the median day of the MRI visit (63).
   A visit whose VISCODE has no registry day keeps a missing time (`NA` in the
   `all_*` lists); registry visits marked "Not Done" are not counted.
+  The clinical tables are read from the pre-randomisation release
+  (`A4_*_PRV2_<date>.csv`). The full-trial release (`Clinical/Raw Data/*.csv`)
+  is not read yet: its visit days are in `Clinical/Derived Data`. Plasma
+  (Lilly p-tau217, Roche Elecsys, Araclon ABtest; `biomarker_*.csv` of the
+  release's External Data) is found anywhere under `Tables_A4/`;
+  results given only as `<LLOQ` / `>ULOQ` have no value and are not counted.
 * **AIBL** - clinical tables end in 2018; 601 subjects exist only in the IDA
   export (imaging, no diagnosis). 1.5 T T1w is a separate family `MRI_T1w_1.5T`.
 * **MCSA** - dates are shifted per subject (first visit = 1950-01-01);

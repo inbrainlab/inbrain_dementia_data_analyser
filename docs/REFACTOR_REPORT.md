@@ -264,3 +264,45 @@ label tokens `IMPNOMCI`, `Dementia-Other`, `OtherDx` in
 `configs/diagnosis.yaml`; A4 labels `CU` → `CN`; the NACC diagnosis step also
 reads the UDS D1 `…IF` columns for the fallback. Peak memory of the NACC
 diagnosis step: 1.9 GB.
+
+## 9. v0.4.1: plasma tables of ADNI and A4
+
+Bug fixes and new tables; outputs of the other datasets are unchanged.
+
+* **ADNI, FNIH Biomarkers Consortium** (`FNIHBC_BLOOD_BIOMARKER_TRAJECTORIES`,
+  one row per test and platform). v0.4.0 named every test
+  `Plasma_<analyte>_FNIHBC`, so two platforms of one analyte got the same
+  name and `plasma_join` stopped with "columns overlap but no suffix
+  specified". Long specs now take `test_map` (`{raw test name: output name}`,
+  only the listed tests are read); the FNIHBC spec maps 21 tests to names that
+  keep the platform (`Plasma_pTau217_AlzPath_FNIHBC`,
+  `Plasma_AB42_40_C2N_FNIHBC`, `Plasma_NfL_Quanterix_FNIHBC` ...). The old
+  duplicate entry was removed.
+* **A4 plasma** (`biomarker_*.csv` of the External Data of the A4/LEARN
+  release, found anywhere under `Tables_A4/`):
+  `settings.plasma_specs` of `configs/datasets/a4.yaml` reads
+  `biomarker_pTau217.csv` (Lilly MSD p-tau217), `biomarker_Plasma_Roche_Results.csv`
+  (Roche Elecsys p-tau181, Abeta42, Abeta40, NfL, GFAP; value column `LABRESN`,
+  which auto-discovery did not recognise, so v0.4.0 read 0 markers) and
+  `biomarker_AB_Test.csv` (Araclon ABtest, total / free / bound Abeta42 and
+  Abeta40). The collection day comes from the file's
+  `COLLECTION_DATE_DAYS_CONSENT` / `LABD_DAYS_CONSENT`; before, the p-tau217
+  date lists held visit codes instead of days.
+* **A4 visit codes**: numeric VISCODEs lose their leading zeros before the
+  registry look-up (`003` -> `3`). The Araclon file uses zero-padded codes and
+  got no day in v0.4.0. The A4 PRV2 tables use unpadded codes, so their days
+  do not change.
+* **Dependencies**: `pandas<3`. pandas 3.1 reads the negative OASIS-3 day
+  offsets (`-101`) as years in the original notebooks; the package has not
+  been validated on pandas 3 and the benchmark runs used pandas 2.2.
+
+Subjects with at least one plasma value after the change (full data,
+2026-11-27): ADNI p-tau217 1,880, NfL 1,870, GFAP 1,870, Abeta42/40 1,861,
+p-tau181 406; A4 Abeta42/40 2,996, NfL 2,340, GFAP 2,337, p-tau181 1,693,
+p-tau217 1,483 (170 further A4 subjects have only `<LLOQ` / `>ULOQ`
+p-tau217 results). Tests: `tests/test_plasma_v041.py`.
+
+Not changed: the A4 full-trial clinical tables (`Clinical/Raw Data/`, 2-4x
+the rows of the PRV2 tables) are not read, because their visit days are in
+`Clinical/Derived Data/`; ADNI `URMC_LABDATA` is not read.
+

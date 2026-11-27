@@ -122,6 +122,37 @@ settings:
       name_tpl: Plasma_{test}_Lilly
       lab: Lilly Clinical Diagnostics Laboratory
       kit: MSD p-tau217 electrochemiluminescence immunoassay
+    FNIHBC_BLOOD_BIOMARKER_TRAJECTORIES:
+      # FNIH Biomarkers Consortium plasma project: long table, one row per sample x
+      # assay; the same samples measured on several platforms (values in the
+      # units reported by each laboratory, column UNITS)
+      long: true
+      test_col: PLASMA_BIOMARKER
+      value_col: TESTVALUE
+      method: ASSAYPLATFORM
+      lab: FNIH Biomarkers Consortium
+      test_map:
+        AlzPath_plasma_ptau217: Plasma_pTau217_AlzPath_FNIHBC
+        Janssen_plasma_ptau217: Plasma_pTau217_Janssen_FNIHBC
+        Fuji_plasma_ptau217: Plasma_pTau217_Fujirebio_FNIHBC
+        Fuji_plasma_Ab42: Plasma_AB42_Fujirebio_FNIHBC
+        Fuji_plasma_Ab40: Plasma_AB40_Fujirebio_FNIHBC
+        C2N_plasma_ptau217: Plasma_pTau217_C2N_FNIHBC
+        C2N_plasma_nptau217: Plasma_npTau217_C2N_FNIHBC
+        C2N_plasma_ptau217_ratio: Plasma_pTau217_ratio_C2N_FNIHBC
+        C2N_plasma_Abeta42: Plasma_AB42_C2N_FNIHBC
+        C2N_plasma_Abeta40: Plasma_AB40_C2N_FNIHBC
+        C2N_plasma_Abeta42_Abeta40: Plasma_AB42_40_C2N_FNIHBC
+        QX_plasma_ptau181: Plasma_pTau181_Quanterix_FNIHBC
+        QX_plasma_Ab42: Plasma_AB42_Quanterix_FNIHBC
+        QX_plasma_Ab40: Plasma_AB40_Quanterix_FNIHBC
+        QX_plasma_NfL: Plasma_NfL_Quanterix_FNIHBC
+        QX_plasma_GFAP: Plasma_GFAP_Quanterix_FNIHBC
+        Roche_plasma_ptau181: Plasma_pTau181_Roche_FNIHBC
+        Roche_plasma_Ab42: Plasma_AB42_Roche_FNIHBC
+        Roche_plasma_Ab40: Plasma_AB40_Roche_FNIHBC
+        Roche_plasma_NfL: Plasma_NfL_Roche_FNIHBC
+        Roche_plasma_GFAP: Plasma_GFAP_Roche_FNIHBC
     JANSSEN_PLASMA_P217_TAU:
       lab: Janssen
       kit: Simoa p217+tau (Janssen)
@@ -209,12 +240,6 @@ settings:
       name_tpl: Plasma_{test}_FujirebioFeas
       lab: Fujirebio
       kit: Fujirebio Lumipulse G
-    FNIHBC_BLOOD_BIOMARKER_TRAJECTORIES:
-      long: true
-      test_col: PLASMA_BIOMARKER
-      value_col: TESTVALUE
-      name_tpl: Plasma_{test}_FNIHBC
-      method: ASSAYPLATFORM
     UPENNPLASMA:
       lab: UPenn ADNI Biomarker Core
       kit: INNO-BIA plasma Abeta forms (Luminex xMAP)

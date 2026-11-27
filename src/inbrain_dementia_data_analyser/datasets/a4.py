@@ -131,7 +131,7 @@ A4 = OUT_DIR = OUT_LONG = ""
 
 def configure(ctx: DatasetContext) -> None:
     """Point the module at one root folder / configuration."""
-    global _CTX, PATHS, A4, OUT_DIR, OUT_LONG, A4_PLASMA_DIR, A4_PLASMA_FILE_RX
+    global _CTX, PATHS, A4, OUT_DIR, OUT_LONG, A4_PLASMA_DIR, A4_PLASMA_FILE_RX, A4_PLASMA_SPECS
     _CTX = ctx
     A4 = str(ctx.folder)
     OUT_DIR, OUT_LONG = str(ctx.output_dir), str(ctx.output_path)
@@ -139,6 +139,7 @@ def configure(ctx: DatasetContext) -> None:
     A4_PLASMA_DIR = str(ctx.folder)
     A4_PLASMA_FILE_RX = re.compile(ctx.settings.get(
         "plasma_file_regex", "plasma|ptau|p-tau|pt217|biomarker|roche|c2n|nfl|gfap"), re.I)
+    A4_PLASMA_SPECS = dict(ctx.settings.get("plasma_specs") or {})
 
 
 def run(ctx: DatasetContext) -> pd.DataFrame:
@@ -154,6 +155,7 @@ def build_nps_columns(scores_by_subj: dict, test_name: str) -> pd.DataFrame:
 
 A4_PLASMA_DIR = ""
 A4_PLASMA_FILE_RX = re.compile("plasma", re.I)
+A4_PLASMA_SPECS: dict = {}   # settings.plasma_specs: {file-name regex: long-format spec}
 
 
 
@@ -240,6 +242,15 @@ def normalise_id(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _norm_viscode(s: pd.Series) -> pd.Series:
+    """Lower-case string visit codes; numeric codes lose their leading zeros
+    ('003' -> '3'), so the zero-padded codes of the A4/LEARN External Data match
+    the registry."""
+    s = s.astype(str).str.strip().str.lower()
+    num = s.str.fullmatch(r"\d+")
+    return s.where(~num, s.str.lstrip("0").replace("", "0"))
+
+
 def attach_examday(df: pd.DataFrame,
                    registry: pd.DataFrame) -> pd.DataFrame:
     """
@@ -265,8 +276,8 @@ def attach_examday(df: pd.DataFrame,
                                         errors="coerce")
         # Coerce both VISCODE columns to lowercase str to prevent
         # int64/object type mismatch error during merge
-        reg["VISCODE"] = reg["VISCODE"].astype(str).str.strip().str.lower()
-        df["VISCODE"]  = df["VISCODE"].astype(str).str.strip().str.lower()
+        reg["VISCODE"] = _norm_viscode(reg["VISCODE"])
+        df["VISCODE"]  = _norm_viscode(df["VISCODE"])
         df = df.merge(reg[["PTID", "VISCODE", "EXAMDAY"]],
                       on=["PTID", "VISCODE"], how="left")
 
@@ -902,6 +913,9 @@ def build_imaging_ida_a4(registry: pd.DataFrame) -> pd.DataFrame:
 
 
 A4_PLASMA_COL_RX  = re.compile(r"p-?tau|pt217|ab_?4[02]|abeta|a[bβ]42|a[bβ]40|nfl|nf_?l|gfap|t-?tau|aps", re.I)
+# Columns that already hold the collection day (days since consent); preferred
+# over the registry look-up when present.
+A4_PLASMA_DAY_COLS = ("COLLECTION_DATE_DAYS_CONSENT", "LABD_DAYS_CONSENT")
 A4_PLASMA_SKIP_COL_RX = re.compile(r"^(bid|ptid|id|viscode|examday|visit|sample|spid|subjid|.*date.*)$", re.I)
 
 
@@ -936,12 +950,22 @@ def build_plasma_a4(registry: pd.DataFrame) -> pd.DataFrame:
             _print(f"    [SKIP] {os.path.basename(path)}: no BID/ID column")
             continue
         raw = attach_examday(raw, registry)
+        day_col = next((c for c in A4_PLASMA_DAY_COLS if c in raw.columns), None)
+        if day_col:
+            raw["_examday"] = pd.to_numeric(raw[day_col], errors="coerce").fillna(raw["_examday"])
         tag = re.sub(r"(?i)\.csv$|^biomarker_?|plasma_?|_?results?", "", os.path.basename(path))
         tag = plasma_sanitize(tag, 20) if tag.strip("_ ") else "A4"
         visit_col = "VISCODE" if "VISCODE" in raw.columns else None
 
+        fspec = next((sp for rx, sp in A4_PLASMA_SPECS.items()
+                      if re.search(rx, os.path.basename(path), re.I)), None)
         tcol, vcol = plasma_detect_long(raw)
-        if tcol and vcol:
+        if fspec:
+            spec = dict(fspec, long=True)
+            tc = spec.get("test_col")
+            if tc in raw.columns:
+                raw[tc] = raw[tc].astype(str).str.strip()
+        elif tcol and vcol:
             # avoid 'Plasma_pTau217_pTau217' when the file is named after the analyte
             tag_ = "A4" if plasma_canon_analyte(tag) in set(raw[tcol].map(plasma_canon_analyte)) else tag
             spec = dict(long=True, test_col=tcol, value_col=vcol,

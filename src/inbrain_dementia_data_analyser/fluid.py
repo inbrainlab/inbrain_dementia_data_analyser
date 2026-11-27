@@ -266,6 +266,8 @@ def plasma_from_spec(df: pd.DataFrame, spec: dict, id_col: str,
       markers   : [(raw_col, canonical_name[, lab[, kit]]), …]   wide tables
       lab / kit : static laboratory / kit for the whole table (DATADIC)
       long      : True → test_col / value_col / name_tpl ('{test}' placeholder)
+      test_map  : long tables only - {raw test name: canonical name}; when given,
+                  only the listed tests are read and name_tpl is not used
       split_col : run every marker separately per value of this column
       method    : column describing assay / batch / platform (optional)
       filter    : {col: regex} — keep rows whose col matches (optional)
@@ -284,8 +286,14 @@ def plasma_from_spec(df: pd.DataFrame, spec: dict, id_col: str,
         if not tcol or not vcol or tcol not in df.columns or vcol not in df.columns:
             _print(f"    [WARN] long-format columns not found ({tcol}, {vcol})")
             return parts
+        test_map = spec.get("test_map") or {}
         for test, g in df.groupby(tcol):
-            name = spec["name_tpl"].format(test=plasma_canon_analyte(test))
+            if test_map:
+                if test not in test_map:
+                    continue
+                name = test_map[test]
+            else:
+                name = spec["name_tpl"].format(test=plasma_canon_analyte(test))
             parts.append(plasma_series(g, id_col, vcol, name, time_col, visit_col, method,
                                        spec.get("lab"), spec.get("kit"), exclude=(tcol,)))
         return parts
